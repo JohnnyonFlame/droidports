@@ -17,8 +17,8 @@ extern "C" {
 #define ENSURE_SYMBOL(mod, symbol, ...) \
   { \
     if (symbol == NULL) { \
-      const char *aliases[] = {__VA_ARGS__, NULL}; \
-      for (int __i = 0; aliases[__i]; __i++) { \
+      const char *aliases[] = {__VA_ARGS__}; \
+      for (int __i = 0; __i < ARRAY_SIZE(aliases); __i++) { \
         if (*(uintptr_t*)&symbol = (uintptr_t)so_symbol(mod, aliases[__i])) \
           break; \
       } \
