@@ -48,19 +48,18 @@ ABI_ATTR void gamepad_is_connected(RValue *ret, void *self, void *other, int arg
     ret->rvalue.val = (yoyo_gamepads[id].is_available) ? 1.0f : 0.0f;
 }
 
-static char *fake_desc = "Generic Pad"; 
 ABI_ATTR void gamepad_get_description(RValue *ret, void *self, void *other, int argc, RValue *args)
 {
-    static Ref ref = {
-        /* We don't want this to be freed any time soon */
-        .m_refCount = 10,
+    Ref *ref = malloc(sizeof(ref));
+
+    *ref = (Ref){
+        .m_refCount = 1,
         .m_size = strlen("Generic Pad"),
-        .m_thing = "Generic Pad"
+        .m_thing = strdup("Generic Pad")
     };
 
-    ref.m_refCount++; //always add one more
     ret->kind = VALUE_STRING;
-    ret->rvalue.str = &ref;
+    ret->rvalue.str = ref;
 }
 
 ABI_ATTR void gamepad_get_button_threshold(RValue *ret, void *self, void *other, int argc, RValue *args)
