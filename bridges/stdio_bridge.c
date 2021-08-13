@@ -210,7 +210,7 @@ ABI_ATTR int _hybris_hook_scandirat(int fd, const char *dir,
 
     int res = scandirat(fd, dir, &namelist_r, NULL, NULL);
 
-    if (res != 0 && namelist_r != NULL) {
+    if (res > 0 && namelist_r != NULL) {
 
         result = malloc(res * sizeof(struct bionic_dirent));
         if (!result)
@@ -220,9 +220,9 @@ ABI_ATTR int _hybris_hook_scandirat(int fd, const char *dir,
             filter_r = malloc(sizeof(struct bionic_dirent));
             if (!filter_r) {
                 while (i-- > 0)
-                        free(result[i]);
-                    free(result);
-                    return -1;
+                    free(result[i]);
+                free(result);
+                return -1;
             }
 
 #ifndef PLATFORM_VITA
@@ -247,6 +247,8 @@ ABI_ATTR int _hybris_hook_scandirat(int fd, const char *dir,
             qsort(result, nItems, sizeof(struct bionic_dirent *), (__compar_fn_t)compar);
 
         *namelist = result;
+    } else {
+        return res;
     }
 
     return nItems;
