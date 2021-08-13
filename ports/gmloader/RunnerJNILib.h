@@ -36,7 +36,7 @@
 #define JNIRUNNER_NATIVE_LIB_FUNCS \
             /*  |Class                                   |Return       |Argument List Definition                                                                                                                 */\
             /*  -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/              \
-    DECL_NATIVE( RunnerJNILib, Startup,                  void,         jstring _apkPath, jstring _saveFilesDir, jstring _packageName, int _sleepMargin)                                                            \
+    DECL_NATIVE( RunnerJNILib, Startup,                  void,         jstring _apkPath, jstring _saveFilesDir, jstring _packageName, int _sleepMargin, int useAssetManager)                                       \
     DECL_NATIVE( RunnerJNILib, Process,                  int,          int _width, int _height, float _accelX, float _accelY, float _accelZ, int _keypadStatus, int _orientation, float _refreshrate )             \
     DECL_NATIVE( RunnerJNILib, TouchEvent,               void,         int _type, int _index, float _x, float _y)                                                                                                  \
     DECL_NATIVE( RunnerJNILib, RenderSplash,             void,         jstring _apkPath, jstring _splashName, int  _screenWidth, int _screenHeight, int _texWidth, int _texHeight, int _pngWidth, int _pngHeight ) \
