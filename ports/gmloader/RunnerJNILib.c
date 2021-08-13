@@ -51,7 +51,9 @@ static jboolean RunnerJNILib_GamepadConnected(jint deviceIndex)
 
 static jstring RunnerJNILib_GamepadDescription(jint deviceIndex)
 {
-    WARN_STUB
+    jstring ret = malloc(sizeof(_jstring));
+    *ret = MK_JSTRING(strdup("Generic Gamepad"));
+    return ret;
 }
 
 static jfloatArray RunnerJNILib_GamepadAxesValues(jint deviceIndex)
@@ -115,11 +117,11 @@ static jint RunnerJNILib_UsingGL2()
     return 1;
 }
 
-_jstring udid = MK_JSTRING("GetUDID");
 static jstring RunnerJNILib_GetUDID()
 {
-    WARN_STUB
-    return &udid;
+    jstring udid = malloc(sizeof(_jstring));
+    *udid = MK_JSTRING(strdup("GetUDID"));
+    return udid;
 }
 
 static void RunnerJNILib_WaitForVsync()
