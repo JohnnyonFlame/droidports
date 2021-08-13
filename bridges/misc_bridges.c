@@ -29,10 +29,14 @@ extern void *_Znwj;
 extern void *__assert2;
 extern void *__cxa_atexit;
 extern void *__cxa_finalize;
+extern void *__cxa_pure_virtual;
+extern void *_ZTVN10__cxxabiv117__class_type_infoE;
+extern void *_ZTVN10__cxxabiv120__si_class_type_infoE;
+
 extern void *__stack_chk_fail;
 extern void *__stack_chk_guard;
 
-static int __stack_chk_guard_fake = 0x42424242;
+static int __stack_chk_guard_fake = 0xD2424242;
 
 ABI_ATTR static void aeabi_memclr_impl(void *dst, size_t len)
 {
@@ -244,6 +248,10 @@ DynLibFunction symtable_misc[] = {
 
     {"__cxa_atexit", (uintptr_t)&__cxa_atexit},
     {"__cxa_finalize", (uintptr_t)&__cxa_finalize},
+    {"__cxa_pure_virtual", (uintptr_t)&__cxa_pure_virtual},
+    {"_ZTVN10__cxxabiv117__class_type_infoE", (uintptr_t)&_ZTVN10__cxxabiv117__class_type_infoE},
+    {"_ZTVN10__cxxabiv120__si_class_type_infoE", (uintptr_t)&_ZTVN10__cxxabiv120__si_class_type_infoE},
+
 #ifdef PLATFORM_VITA
     {"__errno", (uintptr_t)&__errno},
 #else
