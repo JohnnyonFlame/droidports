@@ -6,6 +6,8 @@
 #include "so_util.h"
 #include "RunnerJNILib.h"
 #include "so_util.h"
+#include "libyoyo.h"
+#include "libyoyo_internals.h"
 
 #define MANGLED_CLASSPATH "Java_com_yoyogames_runner_RunnerJNILib_"
 #define CLASSPATH "com/yoyogames/runner/RunnerJNILib"
@@ -36,7 +38,12 @@ static jobject RunnerJNILib_CallExtensionFunction2(jstring class, jstring method
 
 static jint RunnerJNILib_GamepadsCount()
 {
-    WARN_STUB
+    int count = 0;
+    for (int i = 0; i < ARRAY_SIZE(yoyo_gamepads); i++)
+        if (yoyo_gamepads[i].is_available)
+            count++;
+
+    return count;
 }
 
 static void RunnerJNILib_ClearGamepads()
@@ -46,7 +53,10 @@ static void RunnerJNILib_ClearGamepads()
 
 static jboolean RunnerJNILib_GamepadConnected(jint deviceIndex)
 {
-    WARN_STUB
+    if (deviceIndex >= ARRAY_SIZE(yoyo_gamepads))
+        return JNI_FALSE;
+
+    return yoyo_gamepads[deviceIndex].is_available;
 }
 
 static jstring RunnerJNILib_GamepadDescription(jint deviceIndex)
