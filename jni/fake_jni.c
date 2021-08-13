@@ -336,7 +336,7 @@ static jstring iface_NewString(JNIEnv env, const jchar* unicodeChars, jsize len)
 
 static jsize iface_GetStringLength(JNIEnv env, jstring jstr)
 {
-	strlen(jstr->str);
+	return strlen(jstr->str);
 }
 
 static const jchar* iface_GetStringChars(JNIEnv env, jstring jstr, jboolean* isCopy)
