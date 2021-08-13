@@ -83,9 +83,9 @@ void patch_specifics(so_module *mod)
 
     // Apply function hooks
     DynLibHooks hooks[] = {
-        // {"_ZN13MemoryManager10DumpMemoryEP7__sFILE", (uintptr_t)&noop, 1},    // Skip memory dump
+        {"_ZN13MemoryManager10DumpMemoryEP7__sFILE", (uintptr_t)&noop, 1},    // Skip memory dump
         {"_Z17alBufferDebugNamejPKc", (uintptr_t)&noop, 1},                   // Skip OpenAL debug code
-        {"_ZN8TConsole6OutputEPKcz", (uintptr_t)&_dbg_csol_print, 1},         // Hook debug output procedure
+        // {"_ZN8TConsole6OutputEPKcz", (uintptr_t)&_dbg_csol_print, 1},         // Hook debug output procedure
         {"_Z23YoYo_GetPlatform_DoWorkv", (uintptr_t)&force_platform_type, 1}, // Fake platform type
         {NULL}
     };
