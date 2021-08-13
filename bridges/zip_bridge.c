@@ -6,7 +6,7 @@
 #include "zip_util.h"
 #include "so_util.h"
 
-void *AAssetManager_fromJava_impl(void *env, void *obj)
+ABI_ATTR void *AAssetManager_fromJava_impl(void *env, void *obj)
 {
     return (void*)0xDEADBEEF;
 }
@@ -16,7 +16,7 @@ typedef struct zipfail {
     zip_int64_t index;
 } zipfail;
 
-zipfail *AAssetManager_open_impl(void *mgr, const char *filename, int mode)
+ABI_ATTR zipfail *AAssetManager_open_impl(void *mgr, const char *filename, int mode)
 {
     zip_t *apk = get_current_apk();
     zip_int64_t idx = zip_name_locate(apk, filename, ZIP_FL_NOCASE);
@@ -35,7 +35,7 @@ zipfail *AAssetManager_open_impl(void *mgr, const char *filename, int mode)
     return zipf;
 }
 
-off_t AAsset_getLength_impl(zipfail *f)
+ABI_ATTR off_t AAsset_getLength_impl(zipfail *f)
 {
     zip_t *apk = get_current_apk();
 
@@ -46,12 +46,12 @@ off_t AAsset_getLength_impl(zipfail *f)
     return stt.size;
 }
 
-off_t AAsset_read_impl(zipfail *f, void *buf, size_t count)
+ABI_ATTR off_t AAsset_read_impl(zipfail *f, void *buf, size_t count)
 {
     return zip_fread(f->file, buf, count);
 }
 
-void AAsset_close_impl(zipfail *f)
+ABI_ATTR void AAsset_close_impl(zipfail *f)
 {
     if (!f->file)
         return;
