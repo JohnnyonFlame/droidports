@@ -84,9 +84,12 @@ JNI_PRIV_MACRO_TYPE_LIST
 #undef JNI_PRIV_TYPE
 
 // Defines all the necessary method call dispatchers
-#define VA_RESOLVE \
-	va_list va; \
-	va_start(va, method) ;
+#define VA_RESOLVE(body)   \
+	va_list va;            \
+	va_start(va, method) ; \
+	body                   \
+	va_end(va);
+
 
 #define CHECK_FUNCT_VA \
 	if (method && method->addr_variadic)
@@ -95,27 +98,27 @@ JNI_PRIV_MACRO_TYPE_LIST
 	if (method && method->addr_array)
 
 #define JNI_PRIV_TYPE(pretty, type)                                                                                                              \
-    static ABI_ATTR type  iface_CallNonvirtual ## pretty ## Method (JNIEnv env, jobject obj, jclass jclazz, jmethodID method, ...)           { VA_RESOLVE; type ret = 0; CHECK_FUNCT_VA method->addr_variadic(obj, &ret, va);  return ret; } \
-    static ABI_ATTR type  iface_CallNonvirtual ## pretty ## MethodV(JNIEnv env, jobject obj, jclass jclazz, jmethodID method, va_list va)    {             type ret = 0; CHECK_FUNCT_VA method->addr_variadic(obj, &ret, va);  return ret; } \
-    static ABI_ATTR type  iface_CallNonvirtual ## pretty ## MethodA(JNIEnv env, jobject obj, jclass jclazz, jmethodID method, jvalue *value) {             type ret = 0; CHECK_FUNCT_AR method->addr_array(obj, &ret, value);  return ret; } \
-    static ABI_ATTR type  iface_Call           ## pretty ## Method (JNIEnv env, jobject obj, jmethodID method, ...)                          { VA_RESOLVE; type ret = 0; CHECK_FUNCT_VA method->addr_variadic(obj, &ret, va);  return ret; } \
-    static ABI_ATTR type  iface_Call           ## pretty ## MethodV(JNIEnv env, jobject obj, jmethodID method, va_list va)                   {             type ret = 0; CHECK_FUNCT_VA method->addr_variadic(obj, &ret, va);  return ret; } \
-    static ABI_ATTR type  iface_Call           ## pretty ## MethodA(JNIEnv env, jobject obj, jmethodID method, jvalue *value)                {             type ret = 0; CHECK_FUNCT_AR method->addr_array(obj, &ret, value);  return ret; } \
-    static ABI_ATTR type  iface_CallStatic     ## pretty ## Method (JNIEnv env, jclass jclazz, jmethodID method, ...)                        { VA_RESOLVE; type ret = 0; CHECK_FUNCT_VA method->addr_variadic(NULL, &ret, va); return ret; } \
-    static ABI_ATTR type  iface_CallStatic     ## pretty ## MethodV(JNIEnv env, jclass jclazz, jmethodID method, va_list va)                 {             type ret = 0; CHECK_FUNCT_VA method->addr_variadic(NULL, &ret, va); return ret; } \
-    static ABI_ATTR type  iface_CallStatic     ## pretty ## MethodA(JNIEnv env, jclass jclazz, jmethodID method, jvalue *value)              {             type ret = 0; CHECK_FUNCT_AR method->addr_array(NULL, &ret, value); return ret; }
+    static ABI_ATTR type  iface_CallNonvirtual ## pretty ## Method (JNIEnv env, jobject obj, jclass jclazz, jmethodID method, ...)           { VA_RESOLVE(type ret = 0; CHECK_FUNCT_VA method->addr_variadic(obj, &ret, va);)  return ret; } \
+    static ABI_ATTR type  iface_CallNonvirtual ## pretty ## MethodV(JNIEnv env, jobject obj, jclass jclazz, jmethodID method, va_list va)    {            type ret = 0; CHECK_FUNCT_VA method->addr_variadic(obj, &ret, va);   return ret; } \
+    static ABI_ATTR type  iface_CallNonvirtual ## pretty ## MethodA(JNIEnv env, jobject obj, jclass jclazz, jmethodID method, jvalue *value) {            type ret = 0; CHECK_FUNCT_AR method->addr_array(obj, &ret, value);   return ret; } \
+    static ABI_ATTR type  iface_Call           ## pretty ## Method (JNIEnv env, jobject obj, jmethodID method, ...)                          { VA_RESOLVE(type ret = 0; CHECK_FUNCT_VA method->addr_variadic(obj, &ret, va);)  return ret; } \
+    static ABI_ATTR type  iface_Call           ## pretty ## MethodV(JNIEnv env, jobject obj, jmethodID method, va_list va)                   {            type ret = 0; CHECK_FUNCT_VA method->addr_variadic(obj, &ret, va);   return ret; } \
+    static ABI_ATTR type  iface_Call           ## pretty ## MethodA(JNIEnv env, jobject obj, jmethodID method, jvalue *value)                {            type ret = 0; CHECK_FUNCT_AR method->addr_array(obj, &ret, value);   return ret; } \
+    static ABI_ATTR type  iface_CallStatic     ## pretty ## Method (JNIEnv env, jclass jclazz, jmethodID method, ...)                        { VA_RESOLVE(type ret = 0; CHECK_FUNCT_VA method->addr_variadic(NULL, &ret, va);) return ret; } \
+    static ABI_ATTR type  iface_CallStatic     ## pretty ## MethodV(JNIEnv env, jclass jclazz, jmethodID method, va_list va)                 {            type ret = 0; CHECK_FUNCT_VA method->addr_variadic(NULL, &ret, va);  return ret; } \
+    static ABI_ATTR type  iface_CallStatic     ## pretty ## MethodA(JNIEnv env, jclass jclazz, jmethodID method, jvalue *value)              {            type ret = 0; CHECK_FUNCT_AR method->addr_array(NULL, &ret, value);  return ret; }
 JNI_PRIV_MACRO_TYPE_LIST
 #undef JNI_PRIV_TYPE
 
-static ABI_ATTR void iface_CallNonvirtualVoidMethod (JNIEnv env, jobject obj, jclass jclazz, jmethodID method, ...)           { VA_RESOLVE; CHECK_FUNCT_VA method->addr_variadic(obj, NULL, va);  }
-static ABI_ATTR void iface_CallNonvirtualVoidMethodV(JNIEnv env, jobject obj, jclass jclazz, jmethodID method, va_list va)    {             CHECK_FUNCT_VA method->addr_variadic(obj, NULL, va);  }
-static ABI_ATTR void iface_CallNonvirtualVoidMethodA(JNIEnv env, jobject obj, jclass jclazz, jmethodID method, jvalue *value) {             CHECK_FUNCT_AR method->addr_array(obj, NULL, value);  }
-static ABI_ATTR void iface_CallVoidMethod (JNIEnv env, jobject obj, jmethodID method, ...)                                    { VA_RESOLVE; CHECK_FUNCT_VA method->addr_variadic(obj, NULL, va);  }
-static ABI_ATTR void iface_CallVoidMethodV(JNIEnv env, jobject obj, jmethodID method, va_list va)                             {             CHECK_FUNCT_VA method->addr_variadic(obj, NULL, va);  }
-static ABI_ATTR void iface_CallVoidMethodA(JNIEnv env, jobject obj, jmethodID method, jvalue *value)                          {             CHECK_FUNCT_AR method->addr_array(obj, NULL, value);  }
-static ABI_ATTR void iface_CallStaticVoidMethod (JNIEnv env, jclass jclazz, jmethodID method, ...)                            { VA_RESOLVE; CHECK_FUNCT_VA method->addr_variadic(NULL, NULL, va); }
-static ABI_ATTR void iface_CallStaticVoidMethodV(JNIEnv env, jclass jclazz, jmethodID method, va_list va)                     {             CHECK_FUNCT_VA method->addr_variadic(NULL, NULL, va); }
-static ABI_ATTR void iface_CallStaticVoidMethodA(JNIEnv env, jclass jclazz, jmethodID method, jvalue *value)                  {             CHECK_FUNCT_AR method->addr_array(NULL, NULL, value); }
+static ABI_ATTR void iface_CallNonvirtualVoidMethod (JNIEnv env, jobject obj, jclass jclazz, jmethodID method, ...)           { VA_RESOLVE(CHECK_FUNCT_VA method->addr_variadic(obj, NULL, va);)  }
+static ABI_ATTR void iface_CallNonvirtualVoidMethodV(JNIEnv env, jobject obj, jclass jclazz, jmethodID method, va_list va)    {            CHECK_FUNCT_VA method->addr_variadic(obj, NULL, va);   }
+static ABI_ATTR void iface_CallNonvirtualVoidMethodA(JNIEnv env, jobject obj, jclass jclazz, jmethodID method, jvalue *value) {            CHECK_FUNCT_AR method->addr_array(obj, NULL, value);   }
+static ABI_ATTR void iface_CallVoidMethod (JNIEnv env, jobject obj, jmethodID method, ...)                                    { VA_RESOLVE(CHECK_FUNCT_VA method->addr_variadic(obj, NULL, va);)  }
+static ABI_ATTR void iface_CallVoidMethodV(JNIEnv env, jobject obj, jmethodID method, va_list va)                             {            CHECK_FUNCT_VA method->addr_variadic(obj, NULL, va);   }
+static ABI_ATTR void iface_CallVoidMethodA(JNIEnv env, jobject obj, jmethodID method, jvalue *value)                          {            CHECK_FUNCT_AR method->addr_array(obj, NULL, value);   }
+static ABI_ATTR void iface_CallStaticVoidMethod (JNIEnv env, jclass jclazz, jmethodID method, ...)                            { VA_RESOLVE(CHECK_FUNCT_VA method->addr_variadic(NULL, NULL, va);) }
+static ABI_ATTR void iface_CallStaticVoidMethodV(JNIEnv env, jclass jclazz, jmethodID method, va_list va)                     {            CHECK_FUNCT_VA method->addr_variadic(NULL, NULL, va);  }
+static ABI_ATTR void iface_CallStaticVoidMethodA(JNIEnv env, jclass jclazz, jmethodID method, jvalue *value)                  {            CHECK_FUNCT_AR method->addr_array(NULL, NULL, value);  }
 
 ABI_ATTR static jobjectArray iface_NewObjectArray_NONTRIVIAL(JNIEnv env, jsize len, jclass clazz, jobject init)
 {
