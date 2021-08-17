@@ -53,7 +53,7 @@
     DECL_NATIVE( RunnerJNILib, canFlip,                  char          /* none */)                                                                                                                                 \
     DECL_NATIVE( RunnerJNILib, GCMPushResult,            void,         jstring _dataString, int _type, char _bSuccess)
 
-#define DECL_NATIVE(cl, funct, ret, ...) ABI_ATTR extern ret (*RunnerJNILib_##funct)(JNIEnv env, jobject obj, ##__VA_ARGS__);
+#define DECL_NATIVE(cl, funct, ret, ...) ABI_ATTR extern ret (*RunnerJNILib_##funct)(JNIEnv *env, jobject obj, ##__VA_ARGS__);
 JNIRUNNER_NATIVE_LIB_FUNCS
 #undef DECL_NATIVE
 

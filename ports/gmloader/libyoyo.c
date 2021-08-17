@@ -186,7 +186,7 @@ static void createSplashTexture(zip_t *apk, GLuint *tex, int *w_tex, int *h_tex,
 void invoke_app(zip_t *apk, const char *apk_path)
 {
     // Get current jni environment
-    JNIEnv env = jni_get_env();
+    JNIEnv *env = jni_get_env();
 
     // Link and Resolve RunnerJNILib
     jni_register_class(&RunnerJNILib_class);

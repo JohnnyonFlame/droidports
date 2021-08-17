@@ -20,7 +20,7 @@ static jclass registeredClasses[2048] = {
 	NULL
 };
 
-JNIEnv jni_get_env()
+JNIEnv *jni_get_env()
 {
 	return &jni_iface;
 }
@@ -36,48 +36,48 @@ void jni_register_class(jclass clazz)
 
 //jobject differs a tiny bit from the rest, some of the macro functions are not used at all, and NewObjectArray differs from the macro
 //Set them unused and reimplement NewObjectArray
-__attribute__((unused)) static ABI_ATTR jobjectArray  iface_NewObjectArray(JNIEnv , jsize ); 
-__attribute__((unused)) static ABI_ATTR jobject      *iface_GetObjectArrayElements(JNIEnv , jobjectArray, jboolean *); 
-__attribute__((unused)) static ABI_ATTR void          iface_ReleaseObjectArrayElements(JNIEnv , jobjectArray, jobject *, jint); 
-__attribute__((unused)) static ABI_ATTR void          iface_GetObjectArrayRegion(JNIEnv , jobjectArray, jsize, jsize, jobject *); 
-__attribute__((unused)) static ABI_ATTR void          iface_SetObjectArrayRegion(JNIEnv , jobjectArray, jsize, jsize, const jobject *); 
-__attribute__((unused)) static ABI_ATTR jobjectArray  iface_NewObjectArray(JNIEnv , jsize ); 
+__attribute__((unused)) static ABI_ATTR jobjectArray  iface_NewObjectArray(JNIEnv*, jsize ); 
+__attribute__((unused)) static ABI_ATTR jobject      *iface_GetObjectArrayElements(JNIEnv*, jobjectArray, jboolean *); 
+__attribute__((unused)) static ABI_ATTR void          iface_ReleaseObjectArrayElements(JNIEnv*, jobjectArray, jobject *, jint); 
+__attribute__((unused)) static ABI_ATTR void          iface_GetObjectArrayRegion(JNIEnv*, jobjectArray, jsize, jsize, jobject *); 
+__attribute__((unused)) static ABI_ATTR void          iface_SetObjectArrayRegion(JNIEnv*, jobjectArray, jsize, jsize, const jobject *); 
+__attribute__((unused)) static ABI_ATTR jobjectArray  iface_NewObjectArray(JNIEnv*, jsize ); 
 
 // Defines all the necessary member accessor dispatchers
 #define FROM_VARIADIC {  }
 #define JNI_PRIV_TYPE(pretty, type) \
-    static ABI_ATTR type ## Array iface_New ## pretty ## Array(JNIEnv env, jsize size) { \
+    static ABI_ATTR type ## Array iface_New ## pretty ## Array(JNIEnv *env, jsize size) { \
 		type ## Array ref = calloc(1, sizeof(ref)); \
 		ref->elements = calloc(size, sizeof(type)); \
 		ref->count = size; \
 		return ref; \
 	} \
-    static ABI_ATTR type *iface_Get ## pretty ## ArrayElements(JNIEnv env, type ## Array ref, jboolean *isCopy) { \
+    static ABI_ATTR type *iface_Get ## pretty ## ArrayElements(JNIEnv *env, type ## Array ref, jboolean *isCopy) { \
 		if (isCopy) *isCopy = JNI_TRUE; \
 		type *array = malloc(sizeof(type) * ref->count); \
 		memcpy(array, ref->elements, sizeof(type) * ref->count); \
 		return array; \
 	} \
-    static ABI_ATTR void iface_Release ## pretty ## ArrayElements(JNIEnv env, type ## Array ref, type *arr, jint mode) { \
+    static ABI_ATTR void iface_Release ## pretty ## ArrayElements(JNIEnv *env, type ## Array ref, type *arr, jint mode) { \
 		if (mode == 0 || mode == JNI_COMMIT) memcpy(arr, ref->elements, sizeof(type) * ref->count); \
 		if (mode == 0 || mode == JNI_ABORT) free(arr); \
 	} \
-    static ABI_ATTR void iface_Get ## pretty ## ArrayRegion(JNIEnv env, type ## Array ref, jsize start, jsize length, type *arr) { \
+    static ABI_ATTR void iface_Get ## pretty ## ArrayRegion(JNIEnv *env, type ## Array ref, jsize start, jsize length, type *arr) { \
 		memcpy(arr, ref->elements + sizeof(type) * start, sizeof(type) * length); \
 	} \
-    static ABI_ATTR void iface_Set ## pretty ## ArrayRegion(JNIEnv env, type ## Array ref, jsize start, jsize length, const type *arr) { \
+    static ABI_ATTR void iface_Set ## pretty ## ArrayRegion(JNIEnv *env, type ## Array ref, jsize start, jsize length, const type *arr) { \
 		memcpy(ref->elements + sizeof(type) * start, arr, sizeof(type) * length); \
 	} \
-    static ABI_ATTR type iface_Get ## pretty ## Field (JNIEnv env, jobject obj, jfieldID field) { \
+    static ABI_ATTR type iface_Get ## pretty ## Field (JNIEnv *env, jobject obj, jfieldID field) { \
 		return *(type*)((long)obj + (long)field->offset); \
 	} \
-    static ABI_ATTR void iface_Set ## pretty ## Field(JNIEnv env, jobject obj, jfieldID field, type value) { \
+    static ABI_ATTR void iface_Set ## pretty ## Field(JNIEnv *env, jobject obj, jfieldID field, type value) { \
 		*(type*)((long)obj + (long)field->offset) = value; \
 	} \
-    static ABI_ATTR type iface_GetStatic ## pretty ## Field(JNIEnv env, jclass jclazz, jfieldID field) { \
+    static ABI_ATTR type iface_GetStatic ## pretty ## Field(JNIEnv *env, jclass jclazz, jfieldID field) { \
 		if (jclazz && field) return *(type*)field->offset; \
 	} \
-    static ABI_ATTR void iface_SetStatic ## pretty ## Field(JNIEnv env, jclass jclazz, jfieldID field, type value) { \
+    static ABI_ATTR void iface_SetStatic ## pretty ## Field(JNIEnv *env, jclass jclazz, jfieldID field, type value) { \
 		if (jclazz && field) *(type*)field->offset = *(type*)&value; \
 	}
 JNI_PRIV_MACRO_TYPE_LIST
@@ -98,47 +98,47 @@ JNI_PRIV_MACRO_TYPE_LIST
 	if (method && method->addr_array)
 
 #define JNI_PRIV_TYPE(pretty, type)                                                                                                              \
-    static ABI_ATTR type  iface_CallNonvirtual ## pretty ## Method (JNIEnv env, jobject obj, jclass jclazz, jmethodID method, ...)           { type ret = 0; VA_RESOLVE(CHECK_FUNCT_VA method->addr_variadic(obj, &ret, va);)  return ret; } \
-    static ABI_ATTR type  iface_CallNonvirtual ## pretty ## MethodV(JNIEnv env, jobject obj, jclass jclazz, jmethodID method, va_list va)    { type ret = 0;            CHECK_FUNCT_VA method->addr_variadic(obj, &ret, va);   return ret; } \
-    static ABI_ATTR type  iface_CallNonvirtual ## pretty ## MethodA(JNIEnv env, jobject obj, jclass jclazz, jmethodID method, jvalue *value) { type ret = 0;            CHECK_FUNCT_AR method->addr_array(obj, &ret, value);   return ret; } \
-    static ABI_ATTR type  iface_Call           ## pretty ## Method (JNIEnv env, jobject obj, jmethodID method, ...)                          { type ret = 0; VA_RESOLVE(CHECK_FUNCT_VA method->addr_variadic(obj, &ret, va);)  return ret; } \
-    static ABI_ATTR type  iface_Call           ## pretty ## MethodV(JNIEnv env, jobject obj, jmethodID method, va_list va)                   { type ret = 0;            CHECK_FUNCT_VA method->addr_variadic(obj, &ret, va);   return ret; } \
-    static ABI_ATTR type  iface_Call           ## pretty ## MethodA(JNIEnv env, jobject obj, jmethodID method, jvalue *value)                { type ret = 0;            CHECK_FUNCT_AR method->addr_array(obj, &ret, value);   return ret; } \
-    static ABI_ATTR type  iface_CallStatic     ## pretty ## Method (JNIEnv env, jclass jclazz, jmethodID method, ...)                        { type ret = 0; VA_RESOLVE(CHECK_FUNCT_VA method->addr_variadic(NULL, &ret, va);) return ret; } \
-    static ABI_ATTR type  iface_CallStatic     ## pretty ## MethodV(JNIEnv env, jclass jclazz, jmethodID method, va_list va)                 { type ret = 0;            CHECK_FUNCT_VA method->addr_variadic(NULL, &ret, va);  return ret; } \
-    static ABI_ATTR type  iface_CallStatic     ## pretty ## MethodA(JNIEnv env, jclass jclazz, jmethodID method, jvalue *value)              { type ret = 0;            CHECK_FUNCT_AR method->addr_array(NULL, &ret, value);  return ret; }
+    static ABI_ATTR type  iface_CallNonvirtual ## pretty ## Method (JNIEnv *env, jobject obj, jclass jclazz, jmethodID method, ...)           { type ret = 0; VA_RESOLVE(CHECK_FUNCT_VA method->addr_variadic(obj, &ret, va);)  return ret; } \
+    static ABI_ATTR type  iface_CallNonvirtual ## pretty ## MethodV(JNIEnv *env, jobject obj, jclass jclazz, jmethodID method, va_list va)    { type ret = 0;            CHECK_FUNCT_VA method->addr_variadic(obj, &ret, va);   return ret; } \
+    static ABI_ATTR type  iface_CallNonvirtual ## pretty ## MethodA(JNIEnv *env, jobject obj, jclass jclazz, jmethodID method, jvalue *value) { type ret = 0;            CHECK_FUNCT_AR method->addr_array(obj, &ret, value);   return ret; } \
+    static ABI_ATTR type  iface_Call           ## pretty ## Method (JNIEnv *env, jobject obj, jmethodID method, ...)                          { type ret = 0; VA_RESOLVE(CHECK_FUNCT_VA method->addr_variadic(obj, &ret, va);)  return ret; } \
+    static ABI_ATTR type  iface_Call           ## pretty ## MethodV(JNIEnv *env, jobject obj, jmethodID method, va_list va)                   { type ret = 0;            CHECK_FUNCT_VA method->addr_variadic(obj, &ret, va);   return ret; } \
+    static ABI_ATTR type  iface_Call           ## pretty ## MethodA(JNIEnv *env, jobject obj, jmethodID method, jvalue *value)                { type ret = 0;            CHECK_FUNCT_AR method->addr_array(obj, &ret, value);   return ret; } \
+    static ABI_ATTR type  iface_CallStatic     ## pretty ## Method (JNIEnv *env, jclass jclazz, jmethodID method, ...)                        { type ret = 0; VA_RESOLVE(CHECK_FUNCT_VA method->addr_variadic(NULL, &ret, va);) return ret; } \
+    static ABI_ATTR type  iface_CallStatic     ## pretty ## MethodV(JNIEnv *env, jclass jclazz, jmethodID method, va_list va)                 { type ret = 0;            CHECK_FUNCT_VA method->addr_variadic(NULL, &ret, va);  return ret; } \
+    static ABI_ATTR type  iface_CallStatic     ## pretty ## MethodA(JNIEnv *env, jclass jclazz, jmethodID method, jvalue *value)              { type ret = 0;            CHECK_FUNCT_AR method->addr_array(NULL, &ret, value);  return ret; }
 JNI_PRIV_MACRO_TYPE_LIST
 #undef JNI_PRIV_TYPE
 
-static ABI_ATTR void iface_CallNonvirtualVoidMethod (JNIEnv env, jobject obj, jclass jclazz, jmethodID method, ...)           { VA_RESOLVE(CHECK_FUNCT_VA method->addr_variadic(obj, NULL, va);)  }
-static ABI_ATTR void iface_CallNonvirtualVoidMethodV(JNIEnv env, jobject obj, jclass jclazz, jmethodID method, va_list va)    {            CHECK_FUNCT_VA method->addr_variadic(obj, NULL, va);   }
-static ABI_ATTR void iface_CallNonvirtualVoidMethodA(JNIEnv env, jobject obj, jclass jclazz, jmethodID method, jvalue *value) {            CHECK_FUNCT_AR method->addr_array(obj, NULL, value);   }
-static ABI_ATTR void iface_CallVoidMethod (JNIEnv env, jobject obj, jmethodID method, ...)                                    { VA_RESOLVE(CHECK_FUNCT_VA method->addr_variadic(obj, NULL, va);)  }
-static ABI_ATTR void iface_CallVoidMethodV(JNIEnv env, jobject obj, jmethodID method, va_list va)                             {            CHECK_FUNCT_VA method->addr_variadic(obj, NULL, va);   }
-static ABI_ATTR void iface_CallVoidMethodA(JNIEnv env, jobject obj, jmethodID method, jvalue *value)                          {            CHECK_FUNCT_AR method->addr_array(obj, NULL, value);   }
-static ABI_ATTR void iface_CallStaticVoidMethod (JNIEnv env, jclass jclazz, jmethodID method, ...)                            { VA_RESOLVE(CHECK_FUNCT_VA method->addr_variadic(NULL, NULL, va);) }
-static ABI_ATTR void iface_CallStaticVoidMethodV(JNIEnv env, jclass jclazz, jmethodID method, va_list va)                     {            CHECK_FUNCT_VA method->addr_variadic(NULL, NULL, va);  }
-static ABI_ATTR void iface_CallStaticVoidMethodA(JNIEnv env, jclass jclazz, jmethodID method, jvalue *value)                  {            CHECK_FUNCT_AR method->addr_array(NULL, NULL, value);  }
+static ABI_ATTR void iface_CallNonvirtualVoidMethod (JNIEnv *env, jobject obj, jclass jclazz, jmethodID method, ...)           { VA_RESOLVE(CHECK_FUNCT_VA method->addr_variadic(obj, NULL, va);)  }
+static ABI_ATTR void iface_CallNonvirtualVoidMethodV(JNIEnv *env, jobject obj, jclass jclazz, jmethodID method, va_list va)    {            CHECK_FUNCT_VA method->addr_variadic(obj, NULL, va);   }
+static ABI_ATTR void iface_CallNonvirtualVoidMethodA(JNIEnv *env, jobject obj, jclass jclazz, jmethodID method, jvalue *value) {            CHECK_FUNCT_AR method->addr_array(obj, NULL, value);   }
+static ABI_ATTR void iface_CallVoidMethod (JNIEnv *env, jobject obj, jmethodID method, ...)                                    { VA_RESOLVE(CHECK_FUNCT_VA method->addr_variadic(obj, NULL, va);)  }
+static ABI_ATTR void iface_CallVoidMethodV(JNIEnv *env, jobject obj, jmethodID method, va_list va)                             {            CHECK_FUNCT_VA method->addr_variadic(obj, NULL, va);   }
+static ABI_ATTR void iface_CallVoidMethodA(JNIEnv *env, jobject obj, jmethodID method, jvalue *value)                          {            CHECK_FUNCT_AR method->addr_array(obj, NULL, value);   }
+static ABI_ATTR void iface_CallStaticVoidMethod (JNIEnv *env, jclass jclazz, jmethodID method, ...)                            { VA_RESOLVE(CHECK_FUNCT_VA method->addr_variadic(NULL, NULL, va);) }
+static ABI_ATTR void iface_CallStaticVoidMethodV(JNIEnv *env, jclass jclazz, jmethodID method, va_list va)                     {            CHECK_FUNCT_VA method->addr_variadic(NULL, NULL, va);  }
+static ABI_ATTR void iface_CallStaticVoidMethodA(JNIEnv *env, jclass jclazz, jmethodID method, jvalue *value)                  {            CHECK_FUNCT_AR method->addr_array(NULL, NULL, value);  }
 
-ABI_ATTR static jobjectArray iface_NewObjectArray_NONTRIVIAL(JNIEnv env, jsize len, jclass clazz, jobject init)
+ABI_ATTR static jobjectArray iface_NewObjectArray_NONTRIVIAL(JNIEnv *env, jsize len, jclass clazz, jobject init)
 {
 	WARN_STUB;
 	return NULL;
 }
 
-static jint iface_GetVersion(JNIEnv env)
+static jint iface_GetVersion(JNIEnv *env)
 {
 	return 10;
 }
 
-static jclass iface_DefineClass(JNIEnv env, const char *name, jobject loader,
+static jclass iface_DefineClass(JNIEnv *env, const char *name, jobject loader,
     const jbyte* buf, jsize bufLen)
 {
 	WARN_STUB;
 	return NULL;
 }
 
-static jclass iface_FindClass(JNIEnv env, const char* name)
+static jclass iface_FindClass(JNIEnv *env, const char* name)
 {
 	for (int i = 0; registeredClasses[i]; i++) {
 		jclass c = registeredClasses[i];
@@ -150,138 +150,138 @@ static jclass iface_FindClass(JNIEnv env, const char* name)
 	return NULL;
 }
 
-static jclass iface_GetSuperclass(JNIEnv env, jclass jclazz)
+static jclass iface_GetSuperclass(JNIEnv *env, jclass jclazz)
 {
 	/* No inheritance here */
 	return jclazz;
 }
 
-static jboolean iface_IsAssignableFrom(JNIEnv env, jclass jclazz1, jclass jclazz2)
+static jboolean iface_IsAssignableFrom(JNIEnv *env, jclass jclazz1, jclass jclazz2)
 {
 	WARN_STUB;
 }
 
-static jmethodID iface_FromReflectedMethod(JNIEnv env, jobject jmethod)
+static jmethodID iface_FromReflectedMethod(JNIEnv *env, jobject jmethod)
 {
 	WARN_STUB;
 }
 
-static jfieldID iface_FromReflectedField(JNIEnv env, jobject jfield)
+static jfieldID iface_FromReflectedField(JNIEnv *env, jobject jfield)
 {
 	WARN_STUB;
 }
 
-static jobject iface_ToReflectedMethod(JNIEnv env, jclass jcls, jmethodID methodID, jboolean isStatic)
+static jobject iface_ToReflectedMethod(JNIEnv *env, jclass jcls, jmethodID methodID, jboolean isStatic)
 {
 	WARN_STUB;
 }
 
-static jobject iface_ToReflectedField(JNIEnv env, jclass jcls, jfieldID fieldID, jboolean isStatic)
+static jobject iface_ToReflectedField(JNIEnv *env, jclass jcls, jfieldID fieldID, jboolean isStatic)
 {
 	WARN_STUB;
 }
 
-static jint iface_Throw(JNIEnv env, jthrowable jobj)
+static jint iface_Throw(JNIEnv *env, jthrowable jobj)
 {
 	WARN_STUB;
 }
 
-static jint iface_ThrowNew(JNIEnv env, jclass jclazz, const char* message)
+static jint iface_ThrowNew(JNIEnv *env, jclass jclazz, const char* message)
 {
 	WARN_STUB;
 }
 
-static jthrowable iface_ExceptionOccurred(JNIEnv env)
+static jthrowable iface_ExceptionOccurred(JNIEnv *env)
 {
 	WARN_STUB;
 }
 
-static void iface_ExceptionDescribe(JNIEnv env)
+static void iface_ExceptionDescribe(JNIEnv *env)
 {
 	WARN_STUB;
 }
 
-static void iface_ExceptionClear(JNIEnv env)
+static void iface_ExceptionClear(JNIEnv *env)
 {
 	WARN_STUB;
 }
 
-static void iface_FatalError(JNIEnv env, const char* msg)
+static void iface_FatalError(JNIEnv *env, const char* msg)
 {
 	WARN_STUB;
 }
 
-static jint iface_PushLocalFrame(JNIEnv env, jint capacity)
+static jint iface_PushLocalFrame(JNIEnv *env, jint capacity)
 {
 	WARN_STUB;
 }
 
-static jobject iface_PopLocalFrame(JNIEnv env, jobject jresult)
+static jobject iface_PopLocalFrame(JNIEnv *env, jobject jresult)
 {
 	WARN_STUB;
 }
 
-static jobject iface_NewGlobalRef(JNIEnv env, jobject jobj)
+static jobject iface_NewGlobalRef(JNIEnv *env, jobject jobj)
 {
 	return jobj;
 }
 
-static void iface_DeleteGlobalRef(JNIEnv env, jobject jglobalRef)
+static void iface_DeleteGlobalRef(JNIEnv *env, jobject jglobalRef)
 {
 	WARN_STUB;
 }
 
-static jobject iface_NewLocalRef(JNIEnv env, jobject jobj)
+static jobject iface_NewLocalRef(JNIEnv *env, jobject jobj)
 {
 	WARN_STUB;
 }
 
-static void iface_DeleteLocalRef(JNIEnv env, jobject jlocalRef)
+static void iface_DeleteLocalRef(JNIEnv *env, jobject jlocalRef)
 {
 	WARN_STUB;
 }
 
-static jint iface_EnsureLocalCapacity(JNIEnv env, jint capacity)
+static jint iface_EnsureLocalCapacity(JNIEnv *env, jint capacity)
 {
 	WARN_STUB;
 }
 
-static jboolean iface_IsSameObject(JNIEnv env, jobject jref1, jobject jref2)
+static jboolean iface_IsSameObject(JNIEnv *env, jobject jref1, jobject jref2)
 {
 	WARN_STUB;
 }
 
-static jobject iface_AllocObject(JNIEnv env, jclass jclazz)
+static jobject iface_AllocObject(JNIEnv *env, jclass jclazz)
 {
 	WARN_STUB;
 }
 
-static jobject iface_NewObject(JNIEnv env, jclass jclazz, jmethodID methodID, ...)
+static jobject iface_NewObject(JNIEnv *env, jclass jclazz, jmethodID methodID, ...)
 {
 	WARN_STUB;
 }
 
-static jobject iface_NewObjectV(JNIEnv env, jclass jclazz, jmethodID methodID, va_list args)
+static jobject iface_NewObjectV(JNIEnv *env, jclass jclazz, jmethodID methodID, va_list args)
 {
 	WARN_STUB;
 }
 
-static jobject iface_NewObjectA(JNIEnv env, jclass jclazz, jmethodID methodID, jvalue* args)
+static jobject iface_NewObjectA(JNIEnv *env, jclass jclazz, jmethodID methodID, jvalue* args)
 {
 	WARN_STUB;
 }
 
-static jclass iface_GetObjectClass(JNIEnv env, jobject jobj)
+static jclass iface_GetObjectClass(JNIEnv *env, jobject jobj)
 {
 	return jobj->clazz;
 }
 
-static jboolean iface_IsInstanceOf(JNIEnv env, jobject jobj, jclass jclazz)
+static jboolean iface_IsInstanceOf(JNIEnv *env, jobject jobj, jclass jclazz)
 {
 	WARN_STUB;
 }
 
-static jmethodID iface_GetMethodID(JNIEnv env, jclass clazz, const char* name, const char* sig)
+static jmethodID iface_GetMethodID(JNIEnv *env, jclass clazz, const char* name, const char* sig)
 {
 	if (clazz) {
 		for (int i = 0; clazz->methods[i].name; i++) {
@@ -298,7 +298,7 @@ static jmethodID iface_GetMethodID(JNIEnv env, jclass clazz, const char* name, c
 	return NULL;
 }
 
-static jfieldID iface_GetFieldID(JNIEnv env, jclass clazz, const char* name, const char* sig)
+static jfieldID iface_GetFieldID(JNIEnv *env, jclass clazz, const char* name, const char* sig)
 {
 	if (clazz) {
 		for (int i = 0; clazz->fields[i].name; i++) {
@@ -317,167 +317,167 @@ static jfieldID iface_GetFieldID(JNIEnv env, jclass clazz, const char* name, con
 	//WARN_STUB;
 }
 
-static jmethodID iface_GetStaticMethodID(JNIEnv env, jclass clazz, const char* name, const char* sig)
+static jmethodID iface_GetStaticMethodID(JNIEnv *env, jclass clazz, const char* name, const char* sig)
 {
 	return iface_GetMethodID(env, clazz, name, sig);
 	//WARN_STUB;
 }
 
-static jfieldID iface_GetStaticFieldID(JNIEnv env, jclass clazz, const char* name, const char* sig)
+static jfieldID iface_GetStaticFieldID(JNIEnv *env, jclass clazz, const char* name, const char* sig)
 {
 	return iface_GetFieldID(env, clazz, name, sig);
 	//WARN_STUB;
 }
 
-static jstring iface_NewString(JNIEnv env, const jchar* unicodeChars, jsize len)
+static jstring iface_NewString(JNIEnv *env, const jchar* unicodeChars, jsize len)
 {
 	return strndup(unicodeChars, len);
 }
 
-static jsize iface_GetStringLength(JNIEnv env, jstring jstr)
+static jsize iface_GetStringLength(JNIEnv *env, jstring jstr)
 {
 	return strlen(jstr->str);
 }
 
-static const jchar* iface_GetStringChars(JNIEnv env, jstring jstr, jboolean* isCopy)
+static const jchar* iface_GetStringChars(JNIEnv *env, jstring jstr, jboolean* isCopy)
 {
 	if (isCopy) *isCopy = JNI_TRUE;
 	return strdup(jstr->str);
 }
 
-static void iface_ReleaseStringChars(JNIEnv env, jstring jstr, const jchar* chars)
+static void iface_ReleaseStringChars(JNIEnv *env, jstring jstr, const jchar* chars)
 {
 	free(chars);
 }
 
-static jstring iface_NewStringUTF(JNIEnv env, const char* bytes)
+static jstring iface_NewStringUTF(JNIEnv *env, const char* bytes)
 {
 	return strdup(bytes);
 }
 
-static jsize iface_GetStringUTFLength(JNIEnv env, jstring jstr)
+static jsize iface_GetStringUTFLength(JNIEnv *env, jstring jstr)
 {
 	return strlen(jstr->str);
 }
 
-static const char* iface_GetStringUTFChars(JNIEnv env, jstring jstr, jboolean* isCopy)
+static const char* iface_GetStringUTFChars(JNIEnv *env, jstring jstr, jboolean* isCopy)
 {
 	if (isCopy) 
 		*isCopy = JNI_TRUE;
 	return strdup(jstr ? jstr->str : "(nil)");
 }
 
-static void iface_ReleaseStringUTFChars(JNIEnv env, jstring jstr, const char* utf)
+static void iface_ReleaseStringUTFChars(JNIEnv *env, jstring jstr, const char* utf)
 {
 	free(utf);
 }
 
-static jsize iface_GetArrayLength(JNIEnv env, jarray jarr)
+static jsize iface_GetArrayLength(JNIEnv *env, jarray jarr)
 {
 	return jarr->count;
 }
 
-static jobject iface_GetObjectArrayElement(JNIEnv env, jobjectArray jarr, jsize index)
+static jobject iface_GetObjectArrayElement(JNIEnv *env, jobjectArray jarr, jsize index)
 {
 	return ((jobject*)jarr->elements)[index];
 }
 
-static void iface_SetObjectArrayElement(JNIEnv env, jobjectArray jarr, jsize index, jobject jobj)
+static void iface_SetObjectArrayElement(JNIEnv *env, jobjectArray jarr, jsize index, jobject jobj)
 {
 	if (jarr)
 		((jobject*)jarr->elements)[index] = jobj;
 }
 
-static jint iface_RegisterNatives(JNIEnv env, jclass jclazz,
+static jint iface_RegisterNatives(JNIEnv *env, jclass jclazz,
     const JNINativeMethod* methods, jint nMethods)
 {
 	WARN_STUB;
 }
 
-static jint iface_UnregisterNatives(JNIEnv env, jclass jclazz)
+static jint iface_UnregisterNatives(JNIEnv *env, jclass jclazz)
 {
 	WARN_STUB;
 }
 
-static jint iface_MonitorEnter(JNIEnv env, jobject jobj)
+static jint iface_MonitorEnter(JNIEnv *env, jobject jobj)
 {
 	WARN_STUB;
 }
 
-static jint iface_MonitorExit(JNIEnv env, jobject jobj)
+static jint iface_MonitorExit(JNIEnv *env, jobject jobj)
 {
 	WARN_STUB;
 }
 
-static jint iface_GetJavaVM(JNIEnv env, JavaVM** vm)
+static jint iface_GetJavaVM(JNIEnv *env, JavaVM** vm)
 {
 	*vm = (JavaVM*)&jni_fake_vm;
     jni_fake_vm.reserved0 = (uintptr_t)&jni_fake_vm;
     return 0;
 }
 
-static void iface_GetStringRegion(JNIEnv env, jstring jstr, jsize start, jsize len, jchar* buf)
+static void iface_GetStringRegion(JNIEnv *env, jstring jstr, jsize start, jsize len, jchar* buf)
 {
 	WARN_STUB;
 }
 
-static void iface_GetStringUTFRegion(JNIEnv env, jstring jstr, jsize start, jsize len, char* buf)
+static void iface_GetStringUTFRegion(JNIEnv *env, jstring jstr, jsize start, jsize len, char* buf)
 {
 	WARN_STUB;
 }
 
-static void* iface_GetPrimitiveArrayCritical(JNIEnv env, jarray jarr, jboolean* isCopy)
+static void* iface_GetPrimitiveArrayCritical(JNIEnv *env, jarray jarr, jboolean* isCopy)
 {
 	//WARN_STUB;
 	return NULL;
 }
 
-static void iface_ReleasePrimitiveArrayCritical(JNIEnv env, jarray jarr, void* carray, jint mode)
+static void iface_ReleasePrimitiveArrayCritical(JNIEnv *env, jarray jarr, void* carray, jint mode)
 {
 	WARN_STUB;
 }
 
-static const jchar* iface_GetStringCritical(JNIEnv env, jstring jstr, jboolean* isCopy)
+static const jchar* iface_GetStringCritical(JNIEnv *env, jstring jstr, jboolean* isCopy)
 {
 	WARN_STUB;
 }
 
-static void iface_ReleaseStringCritical(JNIEnv env, jstring jstr, const jchar* carray)
+static void iface_ReleaseStringCritical(JNIEnv *env, jstring jstr, const jchar* carray)
 {
 	WARN_STUB;
 }
 
-static jweak iface_NewWeakGlobalRef(JNIEnv env, jobject jobj)
+static jweak iface_NewWeakGlobalRef(JNIEnv *env, jobject jobj)
 {
 	WARN_STUB;
 }
 
-static void iface_DeleteWeakGlobalRef(JNIEnv env, jweak wref)
+static void iface_DeleteWeakGlobalRef(JNIEnv *env, jweak wref)
 {
 	WARN_STUB;
 }
 
-static jboolean iface_ExceptionCheck(JNIEnv env)
+static jboolean iface_ExceptionCheck(JNIEnv *env)
 {
 	WARN_STUB;
 }
 
-static jobjectRefType iface_GetObjectRefType(JNIEnv env, jobject jobj)
+static jobjectRefType iface_GetObjectRefType(JNIEnv *env, jobject jobj)
 {
 	WARN_STUB;
 }
 
-static jobject iface_NewDirectByteBuffer(JNIEnv env, void* address, jlong capacity)
+static jobject iface_NewDirectByteBuffer(JNIEnv *env, void* address, jlong capacity)
 {
 	WARN_STUB;
 }
 
-static void* iface_GetDirectBufferAddress(JNIEnv env, jobject jbuf)
+static void* iface_GetDirectBufferAddress(JNIEnv *env, jobject jbuf)
 {
 	WARN_STUB;
 }
 
-static jlong iface_GetDirectBufferCapacity(JNIEnv env, jobject jbuf)
+static jlong iface_GetDirectBufferCapacity(JNIEnv *env, jobject jbuf)
 {
 	WARN_STUB;
 }

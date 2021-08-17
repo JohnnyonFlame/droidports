@@ -18,7 +18,7 @@
             /*  -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/\
 
 
-#define DECL_NATIVE(cl, funct, ret, ...) ABI_ATTR extern ret (*OS_Build_##funct)(JNIEnv env, jobject obj, ##__VA_ARGS__);
+#define DECL_NATIVE(cl, funct, ret, ...) ABI_ATTR extern ret (*OS_Build_##funct)(JNIEnv *env, jobject obj, ##__VA_ARGS__);
 OS_BUILD_MANAGED_LIB_FUNCS
 #undef DECL_NATIVE
 
