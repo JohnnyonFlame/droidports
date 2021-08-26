@@ -310,7 +310,7 @@ static jfieldID iface_GetFieldID(JNIEnv *env, jclass clazz, const char* name, co
 
 		warning("Class %s does not have field %s.\n", clazz->classname, name);
 	} else {
-		warning("Could not look up field %s, NULL class.\n", clazz->classname, name);
+		warning("Could not look up field %s, NULL class.\n", name);
 	}
 	
 	return NULL;
