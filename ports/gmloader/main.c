@@ -63,7 +63,11 @@ int main(int argc, char *argv[])
 
     /* Load elf module */
     void *inflated_ptr = NULL;
+#if defined(__ARM_ARCH_6__) || defined(__ARM_ARCH_6J__) || defined(__ARM_ARCH_6K__) || defined(__ARM_ARCH_6Z__) || defined(__ARM_ARCH_6ZK__)
+    char *lib = "lib/armeabi/libyoyo.so";
+#else
     char *lib = "lib/armeabi-v7a/libyoyo.so";
+#endif
     ssize_t inflated_bytes = 0;
     if (inflate_buf(apk, lib, &inflated_bytes, &inflated_ptr) == 0) {
         fatal_error("Failed to acquire shared library, exiting.\n");

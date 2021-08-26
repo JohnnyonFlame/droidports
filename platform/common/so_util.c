@@ -29,13 +29,26 @@ void hook_thumb(uintptr_t addr, uintptr_t dst) {
     return;
   addr &= ~1;
   if (addr & 2) {
+#if defined(__ARM_ARCH_6__) || defined(__ARM_ARCH_6J__) || defined(__ARM_ARCH_6K__) || defined(__ARM_ARCH_6Z__) || defined(__ARM_ARCH_6ZK__)
+    uint16_t nop = 0x46c0;
+#else
     uint16_t nop = 0xbf00;
+#endif
     unrestricted_memcpy((void *)addr, &nop, sizeof(nop));
     addr += 2;
   }
+
+
+#if defined(__ARM_ARCH_6__) || defined(__ARM_ARCH_6J__) || defined(__ARM_ARCH_6K__) || defined(__ARM_ARCH_6Z__) || defined(__ARM_ARCH_6ZK__)
+  uint32_t hook[3];
+  hook[0] = 0x46c04778; // BX PC; NO-OP (MOV R8, R8)
+  hook[1] = 0xe51ff004; // LDR PC, [PC, #-0x4]
+  hook[2] = dst;
+#else
   uint32_t hook[2];
   hook[0] = 0xf000f8df; // LDR PC, [PC]
   hook[1] = dst;
+#endif
   unrestricted_memcpy((void *)addr, hook, sizeof(hook));
 }
 
@@ -371,6 +384,7 @@ int so_resolve(so_module *mod) {
           // For other entries, fail completely.
           if (!resolved) {
             if (type == R_ARM_JUMP_SLOT) {
+              warning("Missing: %s\n", mod->dynstr + sym->st_name);
               *ptr = (uintptr_t)&plt0_stub;
             }
             else {
@@ -400,7 +414,7 @@ int so_resolve(so_module *mod) {
 
     for (int j = 0; funcs[j].symbol != NULL; j++) {
       if (addr = so_symbol(mod, funcs[j].symbol)) {
-        warning("Patching %s...\n", funcs[j].symbol);
+        warning("Patching %s (%s)...\n", funcs[j].symbol, (addr & 1) ? "thumb": "arm");
         hook_address(addr, funcs[j].func);
       }
     }

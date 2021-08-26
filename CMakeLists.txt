@@ -19,8 +19,8 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_GNU_SOURCE=1")
 
 # Define platform specific settings for Linux
 if(PLATFORM STREQUAL "linux")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -march=armv7-a -mfpu=vfpv3-d16 -Wfloat-conversion")
-    set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -march=armv7-a -mfpu=vfpv3-d16 -Wfloat-conversion")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wfloat-conversion")
+    set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -Wfloat-conversion")
     find_package(SDL2 REQUIRED)
 # Define platform specific settings for PSVita
 elseif(PLATFORM STREQUAL "vita")
