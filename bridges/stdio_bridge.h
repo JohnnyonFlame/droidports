@@ -76,8 +76,9 @@ extern BIONIC_FILE __sF_fake[3];
 #define RET_ZERO 0, 
 
 /* 
-    STDIO_DECL(name, ret, ret_type, cast, vals, args):
+    STDIO_DECL(name, sync, ret, ret_type, cast, vals, args):
     name: Bridged funciton's original name
+    sync: Whether this function should update the BRIDGE_FILE _flags structure 
     ret: Return Macro
     ret_type: Function's return type
     cast: Macro that acquires the real file pointer from the bridged file
