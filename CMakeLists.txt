@@ -5,15 +5,18 @@ set(ARMHF ON CACHE STRING "Use SoftABI bridges")
 set(PLATFORM "linux" CACHE STRING "Target platform")
 set(PORT "gmloader" CACHE STRING "Port project being built")
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
+set(USE_BUILTIN_FREETYPE OFF CACHE STRING "Use built-in freetype")
 
 project(droidports)
 
 find_package(OpenAL REQUIRED)
-find_package(Freetype REQUIRED)
 find_package(ZLIB REQUIRED)
 find_package(BZip2 REQUIRED)
 find_package(PNG REQUIRED)
 find_package(LibZip REQUIRED)
+if(NOT USE_BUILTIN_FREETYPE)
+    find_package(Freetype REQUIRED)
+endif()
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_GNU_SOURCE=1")
 

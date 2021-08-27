@@ -1,0 +1,7 @@
+if(USE_BUILTIN_FREETYPE)
+    option(FT_DISABLE_HARFBUZZ "Disable HarfBuzz (used for improving auto-hinting of OpenType fonts)." ON)
+    option(FT_DISABLE_BROTLI "Disable support of compressed WOFF2 fonts." ON)
+    set(FREETYPE_INCLUDE_DIRS "3rdparty/freetype/include")
+    set(FREETYPE_LIBRARY "freetype")
+    add_subdirectory(freetype)
+endif()
