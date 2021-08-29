@@ -63,7 +63,7 @@ int main(int argc, char *argv[])
 
     /* Load elf module */
     void *inflated_ptr = NULL;
-#if defined(__ARM_ARCH_6__) || defined(__ARM_ARCH_6J__) || defined(__ARM_ARCH_6K__) || defined(__ARM_ARCH_6Z__) || defined(__ARM_ARCH_6ZK__)
+#if ARCH_ARMV6
     char *lib = "lib/armeabi/libyoyo.so";
 #else
     char *lib = "lib/armeabi-v7a/libyoyo.so";

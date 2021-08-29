@@ -29,17 +29,12 @@ void hook_thumb(uintptr_t addr, uintptr_t dst) {
     return;
   addr &= ~1;
   if (addr & 2) {
-#if defined(__ARM_ARCH_6__) || defined(__ARM_ARCH_6J__) || defined(__ARM_ARCH_6K__) || defined(__ARM_ARCH_6Z__) || defined(__ARM_ARCH_6ZK__)
-    uint16_t nop = 0x46c0;
-#else
-    uint16_t nop = 0xbf00;
-#endif
+    uint16_t nop = 0x46c0; // NO-OP (MOV R8, R8)
     unrestricted_memcpy((void *)addr, &nop, sizeof(nop));
     addr += 2;
   }
 
-
-#if defined(__ARM_ARCH_6__) || defined(__ARM_ARCH_6J__) || defined(__ARM_ARCH_6K__) || defined(__ARM_ARCH_6Z__) || defined(__ARM_ARCH_6ZK__)
+#if ARCH_ARMV6
   uint32_t hook[3];
   hook[0] = 0x46c04778; // BX PC; NO-OP (MOV R8, R8)
   hook[1] = 0xe51ff004; // LDR PC, [PC, #-0x4]

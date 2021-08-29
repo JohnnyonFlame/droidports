@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 
 # Variable preamble
-set(ARMHF ON CACHE STRING "Use SoftABI bridges")
 set(PLATFORM "linux" CACHE STRING "Target platform")
 set(PORT "gmloader" CACHE STRING "Port project being built")
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
@@ -18,7 +17,8 @@ if(NOT USE_BUILTIN_FREETYPE)
     find_package(Freetype REQUIRED)
 endif()
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_GNU_SOURCE=1")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_GNU_SOURCE=1" CACHE STRING "" FORCE)
+set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -D_GNU_SOURCE=1" CACHE STRING "" FORCE)
 
 # Define platform specific settings for Linux
 if(PLATFORM STREQUAL "linux")
@@ -27,7 +27,6 @@ if(PLATFORM STREQUAL "linux")
     find_package(SDL2 REQUIRED)
 # Define platform specific settings for PSVita
 elseif(PLATFORM STREQUAL "vita")
-    # set(ARMHF OFF)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wfloat-conversion")
     message(STATUS "Using platform ps-vita.")
     if(NOT DEFINED CMAKE_TOOLCHAIN_FILE)
@@ -113,12 +112,6 @@ target_link_libraries(${PORT}
     ${OPENAL_LIBRARY}
     pthread
 )
-
-if(ARMHF)
-    target_compile_definitions(${PORT} PUBLIC
-        -DUSE_ARMHF=1
-    )
-endif()
 
 if(PLATFORM STREQUAL "vita")
     # Vita-specific flags

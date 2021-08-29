@@ -5,11 +5,13 @@
 // Flags bridges and native library functions as the correct ABI, e.g. for
 // compiling with HardFP toolchains and drivers, since armv7a android libraries are
 // compiled to the SoftFP ABI.
-#ifdef USE_ARMHF
+#if __ARM_PCS_VFP==1
 #define ABI_ATTR __attribute__((pcs("aapcs")))
 #else
 #define ABI_ATTR
 #endif
+
+#define ARCH_ARMV6 (defined(__ARM_ARCH_6__) || defined(__ARM_ARCH_6J__) || defined(__ARM_ARCH_6K__) || defined(__ARM_ARCH_6Z__) || defined(__ARM_ARCH_6ZK__))
 
 #ifdef NDEBUG
     #ifndef PLATFORM_VITA
