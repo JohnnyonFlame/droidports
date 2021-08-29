@@ -141,7 +141,7 @@ static void RunnerJNILib_WaitForVsync()
 
 static jint RunnerJNILib_HasVsyncHandler()
 {
-    return 1;
+    return 0;
 }
 
 #include "prologue_helpers.h"

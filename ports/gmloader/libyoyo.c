@@ -241,7 +241,7 @@ void invoke_app(zip_t *apk, const char *apk_path)
 	};
 
     set_current_apk(apk);
-    RunnerJNILib_Startup(env, NULL, &args[0], &args[1], &args[2], 0, 1);
+    RunnerJNILib_Startup(env, NULL, &args[0], &args[1], &args[2], 4, 1);
 	// RunnerJNILib_Resume(env, NULL, 1);
 
     // Start main loop
