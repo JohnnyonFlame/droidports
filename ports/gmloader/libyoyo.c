@@ -244,8 +244,6 @@ void invoke_app(zip_t *apk, const char *apk_path)
     // Display splash screen
     float aspect_png = (float)splash_w/(float)splash_h;
     float aspect_screen = (float)w/(float)h;
-    printf("%d %d %d %d %d %d\n", w, h, splash_tex_w, splash_tex_h, splash_w, splash_h);
-    printf("%f %f\n", aspect_screen, aspect_png);
     float scale_x, scale_y;
     if (aspect_png > aspect_screen) {
         scale_x = 1.0f;
@@ -256,7 +254,7 @@ void invoke_app(zip_t *apk, const char *apk_path)
     }
 
     float nw = w*scale_x, nh = h*scale_y;
-    glViewport((w - nw) / 2, (h - nh) / 2, nw, nh);
+    glViewport((GLsizei)((w - nw) / 2.0f), (GLsizei)((h - nh) / 2), (GLsizei)nw, (GLsizei)nh);
     RunnerJNILib_RenderSplash(env, NULL, NULL, NULL, w, h, splash_tex_w, splash_tex_h, splash_w, splash_h);
     flip_display_surface();
 
