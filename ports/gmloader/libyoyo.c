@@ -242,6 +242,21 @@ void invoke_app(zip_t *apk, const char *apk_path)
     };
 
     // Display splash screen
+    float aspect_png = (float)splash_w/(float)splash_h;
+    float aspect_screen = (float)w/(float)h;
+    printf("%d %d %d %d %d %d\n", w, h, splash_tex_w, splash_tex_h, splash_w, splash_h);
+    printf("%f %f\n", aspect_screen, aspect_png);
+    float scale_x, scale_y;
+    if (aspect_png > aspect_screen) {
+        scale_x = 1.0f;
+        scale_y = aspect_screen / aspect_png;
+    } else {
+        scale_x = aspect_png / aspect_screen;
+        scale_y = 1.0f;
+    }
+
+    float nw = w*scale_x, nh = h*scale_y;
+    glViewport((w - nw) / 2, (h - nh) / 2, nw, nh);
     RunnerJNILib_RenderSplash(env, NULL, NULL, NULL, w, h, splash_tex_w, splash_tex_h, splash_w, splash_h);
     flip_display_surface();
 
@@ -256,7 +271,9 @@ void invoke_app(zip_t *apk, const char *apk_path)
 	};
 
     set_current_apk(apk);
-    RunnerJNILib_Startup(env, NULL, &args[0], &args[1], &args[2], 4, 1);
+    RunnerJNILib_Startup(env, NULL, &args[0], &args[1], &args[2], 4, 0);
+    glViewport(0, 0, w, h);
+
 	// RunnerJNILib_Resume(env, NULL, 1);
 
     // Start main loop
