@@ -77,6 +77,21 @@ ABI_ATTR static double force_platform_type()
     return FORCE_PLATFORM;
 }
 
+void (*GamepadUpdate)() = NULL;
+uint32_t *g_IOFrameCount = NULL;
+
+// This hook disabled the majority of the input code, leaving this up to be implemented
+// in a per-platform basis. Check sdl2_media.c as an example.
+ABI_ATTR void IO_Start_Step_hook()
+{
+    // Symbol preamble
+    ENSURE_SYMBOL(libyoyo, GamepadUpdate, "_Z14GamepadUpdateMv");
+    ENSURE_SYMBOL(libyoyo, g_IOFrameCount, "g_IOFrameCount");
+
+    g_IOFrameCount++;
+    GamepadUpdate();
+}
+
 void patch_specifics(so_module *mod)
 {
     libyoyo = mod;
@@ -113,7 +128,7 @@ void patch_specifics(so_module *mod)
 
     // Rework the controller builtins
     register_gamepad_functs(fct_add);
-
+    hook_symbol(libyoyo, "_Z13IO_Start_Stepv", IO_Start_Step_hook, 1);
 }
 
 // Must be free'd after use.
