@@ -20,6 +20,7 @@ int init_display(int w, int h)
     }
 
     SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER | SDL_INIT_AUDIO);
+    SDL_ShowCursor(SDL_DISABLE); //Hide mouse cursor
     sdl_win = SDL_CreateWindow("test", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, w, h, flags);
 
     if (!sdl_win) {
