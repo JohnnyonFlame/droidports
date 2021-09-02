@@ -77,6 +77,12 @@ ABI_ATTR static double force_platform_type()
     return FORCE_PLATFORM;
 }
 
+ABI_ATTR int force_platform_type_gms2(void *self, int n, RValue *args)
+{
+    args[0].kind = VALUE_REAL;
+    args[0].rvalue.val = FORCE_PLATFORM;
+}
+
 void (*GamepadUpdate)() = NULL;
 uint32_t *g_IOFrameCount = NULL;
 
@@ -98,10 +104,11 @@ void patch_specifics(so_module *mod)
 
     // Apply function hooks
     DynLibHooks hooks[] = {
-        {"_ZN13MemoryManager10DumpMemoryEP7__sFILE", (uintptr_t)&noop, 1},    // Skip memory dump
-        {"_Z17alBufferDebugNamejPKc", (uintptr_t)&noop, 1},                   // Skip OpenAL debug code
-        // {"_ZN8TConsole6OutputEPKcz", (uintptr_t)&_dbg_csol_print, 1},         // Hook debug output procedure
-        {"_Z23YoYo_GetPlatform_DoWorkv", (uintptr_t)&force_platform_type, 1}, // Fake platform type
+        {"_ZN13MemoryManager10DumpMemoryEP7__sFILE", (uintptr_t)&noop, 1},                         // Skip memory dump
+        {"_Z17alBufferDebugNamejPKc", (uintptr_t)&noop, 1},                                        // Skip OpenAL debug code
+        // {"_ZN8TConsole6OutputEPKcz", (uintptr_t)&_dbg_csol_print, 1},                           // Hook debug output procedure
+        {"_Z23YoYo_GetPlatform_DoWorkv", (uintptr_t)&force_platform_type, 1},                      // Fake platform type
+        {"_Z20GET_YoYo_GetPlatformP9CInstanceiP6RValue", (uintptr_t)&force_platform_type_gms2, 1}, // Fake platform type
         {NULL}
     };
 
