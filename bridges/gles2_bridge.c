@@ -9,10 +9,10 @@
 
 #define GB_DECL_FWD(func, ret, args, vars)                                                         \
     ret (*func) vars = NULL;                                                                       \
-    ABI_ATTR static ret bridge_##func vars { if (func) return func args; }
+    ABI_ATTR static ret bridge_##func vars { return func args; }
 #define GB_DECL_FWD_NR(func, ret, args, vars)                                                      \
     ret (*func) vars = NULL;                                                                       \
-    ABI_ATTR static ret bridge_##func vars { if (func) func args; }
+    ABI_ATTR static ret bridge_##func vars { func args; }
 #define GB_DECL_FWD_HOOK(func, ret, args, vars)                                                    \
     ret (*func) vars = NULL;                                                                       \
 GLES2_FUNCS
