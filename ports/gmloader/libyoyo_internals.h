@@ -148,6 +148,7 @@ typedef struct Gamepad {
 
 extern Gamepad yoyo_gamepads[MAX_GAMEPADS];
  
+// Symbols from libyoyo.so
 typedef ABI_ATTR void (*routine_t)(RValue *ret, void *self, void *other, int argc, RValue *args);
 typedef ABI_ATTR void (*fct_add_t)(const char *name, routine_t func, int argc, char ret);
 typedef ABI_ATTR int  (*create_ds_map_t)(int, ...);
@@ -157,6 +158,27 @@ extern uintptr_t *New_Room;
 extern fct_add_t Function_Add;
 extern create_ds_map_t CreateDsMap;
 extern create_async_event_with_ds_map_t CreateAsynEventWithDSMap;
+
+extern uintptr_t *New_Room;
+extern fct_add_t Function_Add;
+extern create_ds_map_t CreateDsMap;
+extern create_async_event_with_ds_map_t CreateAsynEventWithDSMap;
+#define N_BUTTONS 30
+extern uint8_t *_IO_ButtonDown;
+extern uint8_t *_IO_ButtonPressed;
+extern uint8_t *_IO_ButtonReleased;
+extern int32_t *g_MousePosX;
+extern int32_t *g_MousePosY;
+
+#define N_KEYS 256
+extern uint8_t prev_kbd_state[N_KEYS];
+extern uint8_t cur_keys[N_KEYS];
+extern uint8_t *_IO_KeyDown;
+extern uint8_t *_IO_LastKey;
+extern uint8_t *_IO_CurrentKey;
+extern uint8_t *_IO_KeyPressed;
+extern uint8_t *_IO_KeyReleased;
+ABI_ATTR extern int32_t (*YYGetInt32)(RValue *val, int idx);
 
 extern void register_gamepad_functs(fct_add_t);
 

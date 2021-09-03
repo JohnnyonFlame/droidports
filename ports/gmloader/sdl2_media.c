@@ -73,22 +73,6 @@ static int update_button(int new_state, int old_state)
     }
 }
 
-#define N_BUTTONS 30
-Uint8 *_IO_ButtonDown = NULL;
-Uint8 *_IO_ButtonPressed = NULL;
-Uint8 *_IO_ButtonReleased = NULL;
-Uint32 *g_MousePosX = NULL;
-Uint32 *g_MousePosY = NULL;
-
-#define N_KEYS 256
-Uint8 prev_kbd_state[N_KEYS] = {};
-Uint8 cur_keys[N_KEYS] = {};
-Uint8 *_IO_KeyDown = NULL;
-Uint8 *_IO_LastKey = NULL;
-Uint8 *_IO_CurrentKey = NULL;
-Uint8 *_IO_KeyPressed = NULL;
-Uint8 *_IO_KeyReleased = NULL;
-
 static int mouse_button_map(int btn)
 {
     switch(btn) {
@@ -202,7 +186,6 @@ int update_input()
     ENSURE_SYMBOL(libyoyo, _IO_ButtonPressed, "_IO_ButtonPressed");
     ENSURE_SYMBOL(libyoyo, _IO_ButtonReleased, "_IO_ButtonReleased");
     ENSURE_SYMBOL(libyoyo, g_MousePosX, "g_MousePosX");
-    ENSURE_SYMBOL(libyoyo, g_MousePosY, "g_MousePosY");
     ENSURE_SYMBOL(libyoyo, g_MousePosY, "g_MousePosY");
 
     memset(_IO_KeyPressed, 0, N_KEYS);

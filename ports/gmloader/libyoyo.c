@@ -21,6 +21,24 @@ uintptr_t *New_Room = NULL;
 fct_add_t Function_Add = NULL;
 create_ds_map_t CreateDsMap = NULL;
 create_async_event_with_ds_map_t CreateAsynEventWithDSMap = NULL;
+uint8_t *_IO_ButtonDown = NULL;
+uint8_t *_IO_ButtonPressed = NULL;
+uint8_t *_IO_ButtonReleased = NULL;
+int32_t *g_MousePosX = NULL;
+int32_t *g_MousePosY = NULL;
+uint8_t *_IO_KeyDown = NULL;
+uint8_t *_IO_LastKey = NULL;
+uint8_t *_IO_CurrentKey = NULL;
+uint8_t *_IO_KeyPressed = NULL;
+uint8_t *_IO_KeyReleased = NULL;
+
+void (*GamepadUpdate)() = NULL;
+uint32_t *g_IOFrameCount = NULL;
+
+ABI_ATTR int32_t (*YYGetInt32)(RValue *val, int idx) = NULL;
+
+uint8_t prev_kbd_state[N_KEYS] = {};
+uint8_t cur_keys[N_KEYS] = {};
 
 static char *fake_functs[] = {
     "object_set_collisions",
