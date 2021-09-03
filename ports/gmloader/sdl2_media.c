@@ -321,6 +321,8 @@ int update_input()
         _IO_ButtonReleased[id] = !IS_SET(mouse_state, mask) &&  IS_SET(prev_mouse_state, mask);
     }
 
+    prev_mouse_state = mouse_state;
+
     return 1;
 }
 
