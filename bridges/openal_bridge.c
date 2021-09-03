@@ -43,16 +43,21 @@ typedef struct BRIDGE_ALCcontext {
 
 ABI_ATTR static void bridge_alcProcessContext(BRIDGE_ALCcontext *context)
 {
-    alcProcessContext(context->or_ctx);
+    if (context)
+        alcProcessContext(context->or_ctx);
 }
 
 ABI_ATTR static void bridge_alcSuspendContext(BRIDGE_ALCcontext *context)
 {
-    alcSuspendContext(context->or_ctx);
+    if (context)
+        alcSuspendContext(context->or_ctx);
 }
 
 ABI_ATTR static void bridge_alcDestroyContext(BRIDGE_ALCcontext *context)
 {
+    if (!context)
+        return;
+
     // Wait until mutex is actually destroyed
     while(pthread_mutex_destroy_bridge(&context->mtx->mtx) == EBUSY);
 
@@ -79,6 +84,9 @@ volatile BRIDGE_ALCcontext *currentALCContext = NULL;
 ABI_ATTR static ALCboolean bridge_alcMakeContextCurrent(BRIDGE_ALCcontext *context)
 {
     ALCboolean ret;
+    if (!context)
+        return ALC_FALSE;
+
     if (ret = alcMakeContextCurrent(context->or_ctx))
         currentALCContext = context;
 
@@ -92,6 +100,9 @@ ABI_ATTR static BRIDGE_ALCcontext *bridge_alcGetCurrentContext()
 
 ABI_ATTR static ALCdevice* bridge_alcGetContextsDevice(BRIDGE_ALCcontext *context)
 {
+    if (!context)
+        return NULL;
+
     return alcGetContextsDevice(context->or_ctx);
 }
 
