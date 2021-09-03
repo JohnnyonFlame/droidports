@@ -36,6 +36,8 @@ void (*GamepadUpdate)() = NULL;
 uint32_t *g_IOFrameCount = NULL;
 
 ABI_ATTR int32_t (*YYGetInt32)(RValue *val, int idx) = NULL;
+ABI_ATTR int32_t (*Graphics_DisplayWidth)() = NULL;
+ABI_ATTR int32_t (*Graphics_DisplayHeight)() = NULL;
 
 uint8_t prev_kbd_state[N_KEYS] = {};
 uint8_t cur_keys[N_KEYS] = {};
@@ -101,9 +103,6 @@ ABI_ATTR int force_platform_type_gms2(void *self, int n, RValue *args)
     args[0].rvalue.val = FORCE_PLATFORM;
 }
 
-void (*GamepadUpdate)() = NULL;
-uint32_t *g_IOFrameCount = NULL;
-
 // This hook disabled the majority of the input code, leaving this up to be implemented
 // in a per-platform basis. Check sdl2_media.c as an example.
 ABI_ATTR void IO_Start_Step_hook()
@@ -111,6 +110,15 @@ ABI_ATTR void IO_Start_Step_hook()
     // Symbol preamble
     ENSURE_SYMBOL(libyoyo, GamepadUpdate, "_Z14GamepadUpdateMv");
     ENSURE_SYMBOL(libyoyo, g_IOFrameCount, "g_IOFrameCount");
+    ENSURE_SYMBOL(libyoyo, g_MousePosX, "g_MousePosX");
+    ENSURE_SYMBOL(libyoyo, g_MousePosX, "g_MousePosY");
+    ENSURE_SYMBOL(libyoyo, Graphics_DisplayWidth, "_Z21Graphics_DisplayWidthv");
+    ENSURE_SYMBOL(libyoyo, Graphics_DisplayHeight, "_Z22Graphics_DisplayHeightv");
+
+    if (*g_MousePosX < 0) *g_MousePosX = 0;
+    if (*g_MousePosY < 0) *g_MousePosY = 0;
+    if (*g_MousePosX > Graphics_DisplayWidth()) *g_MousePosX = Graphics_DisplayWidth();
+    if (*g_MousePosY > Graphics_DisplayHeight()) *g_MousePosY = Graphics_DisplayHeight();
 
     g_IOFrameCount++;
     GamepadUpdate();
@@ -153,6 +161,7 @@ void patch_specifics(so_module *mod)
 
     // Rework the controller builtins
     register_gamepad_functs(fct_add);
+    register_mouse_functs(fct_add);
     hook_symbol(libyoyo, "_Z13IO_Start_Stepv", IO_Start_Step_hook, 1);
 }
 

@@ -287,14 +287,15 @@ int update_input()
 
     // Mouse Code
     int x, y;
-    Uint32 mouse_state = SDL_GetMouseState(&x, &y);
+    Uint32 mouse_state = SDL_GetRelativeMouseState(&x, &y);
 
     memset(_IO_ButtonDown, 0, N_BUTTONS);
     memset(_IO_ButtonPressed, 0, N_BUTTONS);
     memset(_IO_ButtonReleased, 0, N_BUTTONS);
 
-    *g_MousePosX = x;
-    *g_MousePosY = y;
+    *g_MousePosX += x;
+    *g_MousePosY += y;
+
     #define IS_SET(state, mask) (((state) & (mask)) == (mask))
     for (int i = 0; i < 3; i++) {
         int id = mouse_button_map(i + SDL_BUTTON_LEFT);

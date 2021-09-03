@@ -179,6 +179,8 @@ extern uint8_t *_IO_CurrentKey;
 extern uint8_t *_IO_KeyPressed;
 extern uint8_t *_IO_KeyReleased;
 ABI_ATTR extern int32_t (*YYGetInt32)(RValue *val, int idx);
+ABI_ATTR extern int32_t (*Graphics_DisplayWidth)();
+ABI_ATTR extern int32_t (*Graphics_DisplayHeight)();
 
 extern void register_gamepad_functs(fct_add_t);
 
