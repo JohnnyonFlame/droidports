@@ -19,7 +19,11 @@ int unrestricted_memcpy(void *dst, const void *src, size_t len)
 
 uintptr_t block_alloc(int exec, uintptr_t base_addr, size_t sz)
 {
-  return (uintptr_t)mmap((void*)base_addr, sz, PROT_READ|PROT_WRITE|(exec ? PROT_EXEC : 0), MAP_PRIVATE|MAP_ANONYMOUS|MAP_FIXED, 0, 0);
+  int flags = MAP_PRIVATE|MAP_ANONYMOUS;
+  if ((void*)base_addr != NULL)
+    flags |= MAP_FIXED;
+  
+  return (uintptr_t)mmap((void*)base_addr, sz, PROT_READ|PROT_WRITE|(exec ? PROT_EXEC : 0), flags, 0, 0);
 }
 
 void block_free(uintptr_t block, size_t sz)
