@@ -30,6 +30,11 @@ extern void *__assert2;
 extern void *__cxa_atexit;
 extern void *__cxa_finalize;
 extern void *__cxa_pure_virtual;
+extern void *__cxa_end_catch;
+extern void *__cxa_allocate_exception;
+extern void *__cxa_throw;
+extern void *__cxa_rethrow;
+extern void *__cxa_free_exception;
 extern void *_ZTVN10__cxxabiv117__class_type_infoE;
 extern void *_ZTVN10__cxxabiv120__si_class_type_infoE;
 
@@ -249,6 +254,11 @@ DynLibFunction symtable_misc[] = {
     {"__cxa_atexit", (uintptr_t)&__cxa_atexit},
     {"__cxa_finalize", (uintptr_t)&__cxa_finalize},
     {"__cxa_pure_virtual", (uintptr_t)&__cxa_pure_virtual},
+    {"__cxa_end_catch", (uintptr_t)&__cxa_end_catch},
+    {"__cxa_allocate_exception", (uintptr_t)&__cxa_allocate_exception},
+    {"__cxa_throw", (uintptr_t)&__cxa_throw},
+    {"__cxa_rethrow", (uintptr_t)&__cxa_rethrow},
+    {"__cxa_free_exception", (uintptr_t)&__cxa_free_exception},
     {"_ZTVN10__cxxabiv117__class_type_infoE", (uintptr_t)&_ZTVN10__cxxabiv117__class_type_infoE},
     {"_ZTVN10__cxxabiv120__si_class_type_infoE", (uintptr_t)&_ZTVN10__cxxabiv120__si_class_type_infoE},
 
