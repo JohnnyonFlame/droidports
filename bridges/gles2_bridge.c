@@ -21,7 +21,7 @@ GLES2_EXT_FUNCS
 #undef GB_DECL_FWD_NR
 #undef GB_DECL_FWD
 
-void bridge_glDiscardFramebufferEXT(GLenum target, GLsizei numAttachments, const GLenum *attachments)
+ABI_ATTR void bridge_glDiscardFramebufferEXT(GLenum target, GLsizei numAttachments, const GLenum *attachments)
 {
     // This is just a hint, maybe disable it
 #if 0
