@@ -83,6 +83,7 @@ void so_initialize(so_module *mod);
 uintptr_t so_symbol(so_module *mod, const char *symbol);
 
 //Platform Specific Implementations
+void trampoline_ldm(uint32_t *dst);
 int unrestricted_memcpy(void *dst, const void *src, size_t len);
 uintptr_t block_alloc(int exec, uintptr_t base_addr, size_t sz);
 void block_free(uintptr_t block, size_t sz);

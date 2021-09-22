@@ -133,6 +133,7 @@ void patch_specifics(so_module *mod)
         {"_ZN13MemoryManager10DumpMemoryEP7__sFILE", (uintptr_t)&noop, 1},                         // Skip memory dump
         {"_Z17alBufferDebugNamejPKc", (uintptr_t)&noop, 1},                                        // Skip OpenAL debug code
         // {"_ZN8TConsole6OutputEPKcz", (uintptr_t)&_dbg_csol_print, 1},                           // Hook debug output procedure
+        {"_ZN12DummyConsole6OutputEPKcz", (uintptr_t)&_dbg_csol_print, 1},                         // Hook debug output procedure
         {"_Z23YoYo_GetPlatform_DoWorkv", (uintptr_t)&force_platform_type, 1},                      // Fake platform type
         {"_Z20GET_YoYo_GetPlatformP9CInstanceiP6RValue", (uintptr_t)&force_platform_type_gms2, 1}, // Fake platform type
         {NULL}
@@ -163,6 +164,21 @@ void patch_specifics(so_module *mod)
     register_gamepad_functs(fct_add);
     register_mouse_functs(fct_add);
     hook_symbol(libyoyo, "_Z13IO_Start_Stepv", IO_Start_Step_hook, 1);
+
+    // This function uses unaligned addresses on a ldmia instruction as an optimization
+    // work around it with trampolines.
+    uintptr_t shd_load = so_symbol(mod, "_Z11Shader_LoadPhjS_");
+    if (shd_load) {
+        for (int i = 0; i < 2048; i++) {
+            uint32_t inst = *(uint32_t*)(shd_load + (i*sizeof(uint32_t)));
+            //Is this an LDMIA instruction, and not on pc?
+            if (((inst & 0xFFF00000) == 0xE8900000) && (((inst >> 16) & 0xF) != 0xC) ) {
+                warning("Found possibly misaligned ldmia on 0x%08X, trying to fix it...\n", shd_load + (i*sizeof(uint32_t)));
+                trampoline_ldm(shd_load + (i*sizeof(uint32_t)));
+                break;
+            }
+        }
+    }
 }
 
 // Must be free'd after use.

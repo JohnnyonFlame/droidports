@@ -24,6 +24,42 @@
 
 static so_module *head = NULL, *tail = NULL;
 
+static uintptr_t rwx_blockid = NULL;
+static uintptr_t rwx_ptr = NULL;
+
+void trampoline_ldm(uint32_t *dst)
+{
+  if (!rwx_blockid) {
+    rwx_blockid = block_alloc(1, NULL, 0x100000);
+    rwx_ptr = block_get_base_address(rwx_blockid);
+  }
+
+  uint32_t trampoline[2];
+  uint32_t funct[20] = {0xFAFAFAFA};
+  uint32_t *ptr = funct;
+
+  int cur = 0;
+  int baseReg = ((*dst) >> 16) & 0xF;
+  int bitMask =  (*dst)        & 0xFFFF;
+  for (int i = 0; i < 16; i++) {
+    if (bitMask & (1 << i)) {
+      *ptr++ = 0xe5100000 | (((cur)<0)?0:1)<<23 | (baseReg << 16) | (i << 12) | cur; // LDR ri, [base_reg, #cur]
+      cur += 4;
+    }
+  }
+
+  *ptr++ = *(dst+1);                                    // &[src+0x4]          ; clobbered instruction
+  *ptr++ = 0xe51ff004;                                  // LDR PC, [PC, -0x8]  ; jmp to [dst+0x8]
+  *ptr++ = dst+2;                                       // .dword <...>        ; [dst+0x8]
+  
+  trampoline[0] = 0xe51ff004;
+  trampoline[1] = rwx_ptr;
+
+  unrestricted_memcpy(rwx_ptr, funct, ((uintptr_t)ptr) - ((uintptr_t)funct));
+  unrestricted_memcpy(dst, trampoline, sizeof(trampoline));
+  rwx_ptr += (ptr - funct) * sizeof(uint32_t);
+}
+
 void hook_thumb(uintptr_t addr, uintptr_t dst) {
   if (addr == 0)
     return;
@@ -209,6 +245,16 @@ int so_load(so_module *mod, const char *filename, uintptr_t load_addr, void *so_
   if (written == sz)
     __gdb_breakpoint_add_symbol_file(mod, fname);
 #endif
+
+  // Needs an actual decompiler :/ will use simplified one for now... (libyoyo.c)
+  //for (uintptr_t addr = mod->text_base; addr < mod->text_base + mod->data_size; addr+=4) {
+  //  uint32_t inst = *(uint32_t*)(addr);
+  //  //Is this an LDMIA instruction, and not on pc?
+  //  if (((inst & 0xFFF00000) == 0xE8900000) && (((inst >> 16) & 0xF) != 0xC) ) {
+  //    warning("Found possibly misaligned ldmia on 0x%08X, trying to fix it...\n", addr);
+  //    trampoline_ldm(addr);
+  //  }
+  //}
 
   // All done
   free(so_data);
