@@ -91,6 +91,18 @@ static void game_end_reimpl()
     *New_Room = 0xffffff9c;
 }
 
+static void YYError(const char *msg, ...)
+{
+    char err[1024];
+    va_list va;
+    va_start(va, msg);
+    vsnprintf(err, sizeof(err), msg, va);
+    va_end(va);
+
+    fatal_error("%s\n", err);
+    exit(-1);
+}
+
 double FORCE_PLATFORM = os_linux;
 ABI_ATTR static double force_platform_type()
 {
@@ -134,6 +146,7 @@ void patch_specifics(so_module *mod)
         {"_Z17alBufferDebugNamejPKc", (uintptr_t)&noop, 1},                                        // Skip OpenAL debug code
         // {"_ZN8TConsole6OutputEPKcz", (uintptr_t)&_dbg_csol_print, 1},                           // Hook debug output procedure
         {"_ZN12DummyConsole6OutputEPKcz", (uintptr_t)&_dbg_csol_print, 1},                         // Hook debug output procedure
+        {"_Z7YYErrorPKcz", (uintptr_t)&YYError, 1},                                                // Hook error messages
         {"_Z23YoYo_GetPlatform_DoWorkv", (uintptr_t)&force_platform_type, 1},                      // Fake platform type
         {"_Z20GET_YoYo_GetPlatformP9CInstanceiP6RValue", (uintptr_t)&force_platform_type_gms2, 1}, // Fake platform type
         {NULL}
