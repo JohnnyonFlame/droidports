@@ -33,9 +33,9 @@ ABI_ATTR typedef int (* init_array_t)();
 typedef struct so_module {
   struct so_module *next;
 
-  uintptr_t text_blockid, data_blockid;
-  uintptr_t text_base, data_base;
-  size_t text_size, data_size;
+  uintptr_t patch_blockid, text_blockid, data_blockid;
+  uintptr_t patch_base, patch_head, text_base, data_base;
+  size_t patch_size, text_size, data_size;
 
   Elf32_Ehdr *ehdr;
   Elf32_Phdr *phdr;
@@ -83,7 +83,7 @@ void so_initialize(so_module *mod);
 uintptr_t so_symbol(so_module *mod, const char *symbol);
 
 //Platform Specific Implementations
-void trampoline_ldm(uint32_t *dst);
+void so_symbol_fix_ldmia(so_module *mod, const char *symbol);
 int unrestricted_memcpy(void *dst, const void *src, size_t len);
 uintptr_t block_alloc(int exec, uintptr_t base_addr, size_t sz);
 void block_free(uintptr_t block, size_t sz);

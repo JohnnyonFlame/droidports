@@ -25,40 +25,43 @@
 
 static so_module *head = NULL, *tail = NULL;
 
-static uintptr_t rwx_blockid = NULL;
-static uintptr_t rwx_ptr = NULL;
-
-void trampoline_ldm(uint32_t *dst)
+static void trampoline_ldm(so_module *mod, uint32_t *dst)
 {
-  if (!rwx_blockid) {
-    rwx_blockid = block_alloc(1, NULL, 0x100000);
-    rwx_ptr = block_get_base_address(rwx_blockid);
-  }
-
-  uint32_t trampoline[2];
+  uint32_t trampoline[1];
   uint32_t funct[20] = {0xFAFAFAFA};
   uint32_t *ptr = funct;
 
   int cur = 0;
   int baseReg = ((*dst) >> 16) & 0xF;
   int bitMask =  (*dst)        & 0xFFFF;
+
+  uint32_t stored = NULL;
   for (int i = 0; i < 16; i++) {
     if (bitMask & (1 << i)) {
-      *ptr++ = 0xe5100000 | (((cur)<0)?0:1)<<23 | (baseReg << 16) | (i << 12) | cur; // LDR ri, [base_reg, #cur]
+      // If the register we're reading the offset from is the same as the one we're writing,
+      // delay it to the very end so that the base pointer ins't clobbered
+      if (baseReg == i)
+        stored = LDR_OFFS(i, baseReg, cur).raw;
+      else
+        *ptr++ = LDR_OFFS(i, baseReg, cur).raw;
       cur += 4;
     }
   }
 
-  *ptr++ = *(dst+1);                                    // &[src+0x4]          ; clobbered instruction
-  *ptr++ = 0xe51ff004;                                  // LDR PC, [PC, -0x8]  ; jmp to [dst+0x8]
-  *ptr++ = dst+2;                                       // .dword <...>        ; [dst+0x8]
-  
-  trampoline[0] = 0xe51ff004;
-  trampoline[1] = rwx_ptr;
+  // Perform the delayed load if needed
+  if (stored) {
+    *ptr++ = stored;
+  }
 
-  unrestricted_memcpy(rwx_ptr, funct, ((uintptr_t)ptr) - ((uintptr_t)funct));
+  *ptr++ = LDR_OFFS(PC, PC, -0x4).raw;                  // LDR PC, [PC, -0x4]  ; jmp to [dst+0x4]
+  *ptr++ = dst+1;                                       // .dword <...>        ; [dst+0x4]
+  
+  // Create sign extended relative address rel_addr
+  trampoline[0] = B(dst, mod->patch_head).raw;
+
+  unrestricted_memcpy(mod->patch_head, funct, ((uintptr_t)ptr) - ((uintptr_t)funct));
   unrestricted_memcpy(dst, trampoline, sizeof(trampoline));
-  rwx_ptr += (ptr - funct) * sizeof(uint32_t);
+  mod->patch_head += (ptr - funct) * sizeof(uint32_t);
 }
 
 void hook_thumb(uintptr_t addr, uintptr_t dst) {
@@ -155,10 +158,18 @@ int so_load(so_module *mod, const char *filename, uintptr_t load_addr, void *so_
       size_t prog_size;
 
       if ((mod->phdr[i].p_flags & PF_X) == PF_X) {
+        // Allocate arena for code patches, trampolines, etc
+        // Sits exactly under the desired allocation space
+        mod->patch_size = ALIGN_MEM(0x10000, mod->phdr[i].p_align);
+        mod->patch_blockid = block_alloc(1, load_addr - mod->patch_size, mod->patch_size);
+        mod->patch_base = block_get_base_address(mod->patch_blockid);
+        mod->patch_head = mod->patch_base;
+
+        // Allocate space for the .text section
         prog_size = ALIGN_MEM(mod->phdr[i].p_memsz, mod->phdr[i].p_align);
         mod->text_blockid = block_alloc(1, load_addr, prog_size);
 
-        if (mod->text_blockid < 0)
+        if ((mod->text_blockid < 0) || (mod->patch_blockid < 0))
           goto err_free_so;
 
         prog_data = block_get_base_address(mod->text_blockid);
@@ -246,16 +257,6 @@ int so_load(so_module *mod, const char *filename, uintptr_t load_addr, void *so_
   if (written == sz)
     __gdb_breakpoint_add_symbol_file(mod, fname);
 #endif
-
-  // Needs an actual decompiler :/ will use simplified one for now... (libyoyo.c)
-  //for (uintptr_t addr = mod->text_base; addr < mod->text_base + mod->data_size; addr+=4) {
-  //  uint32_t inst = *(uint32_t*)(addr);
-  //  //Is this an LDMIA instruction, and not on pc?
-  //  if (((inst & 0xFFF00000) == 0xE8900000) && (((inst >> 16) & 0xF) != 0xC) ) {
-  //    warning("Found possibly misaligned ldmia on 0x%08X, trying to fix it...\n", addr);
-  //    trampoline_ldm(addr);
-  //  }
-  //}
 
   // All done
   free(so_data);
@@ -445,23 +446,6 @@ int so_resolve(so_module *mod) {
     }
   }
 
-  // Will look for symbols inside the modules which are included in one of the
-  // static patches provided in main.c.
-  // This will patch out all statically compiled symbols it can find with one of
-  // the available bridges. E.g., for fixing issues with broken audio or fonts on 
-  // certain GameMaker: Studio runner versions.
-  for (int i = 0; so_static_patches[i] != NULL; i++) {
-    DynLibFunction *funcs = so_static_patches[i];
-    uintptr_t addr;
-
-    for (int j = 0; funcs[j].symbol != NULL; j++) {
-      if (addr = so_symbol(mod, funcs[j].symbol)) {
-        warning("Patching %s (%s)...\n", funcs[j].symbol, (addr & 1) ? "thumb": "arm");
-        hook_address(addr, funcs[j].func);
-      }
-    }
-  }
-
   return 0;
 }
 
@@ -483,7 +467,8 @@ uint32_t so_hash(const uint8_t *name) {
   return h;
 }
 
-uintptr_t so_symbol(so_module *mod, const char *symbol) {
+static int so_symbol_index(so_module *mod, const char *symbol)
+{
   if (mod->hash) {
     uint32_t hash = so_hash((const uint8_t *)symbol);
     uint32_t nbucket = mod->hash[0];
@@ -493,7 +478,7 @@ uintptr_t so_symbol(so_module *mod, const char *symbol) {
       if (mod->dynsym[i].st_shndx == SHN_UNDEF)
         continue;
       if (mod->dynsym[i].st_info != SHN_UNDEF && strcmp(mod->dynstr + mod->dynsym[i].st_name, symbol) == 0)
-        return mod->text_base + mod->dynsym[i].st_value;
+        return i;
     }
   }
 
@@ -501,10 +486,42 @@ uintptr_t so_symbol(so_module *mod, const char *symbol) {
     if (mod->dynsym[i].st_shndx == SHN_UNDEF)
       continue;
     if (mod->dynsym[i].st_info != SHN_UNDEF && strcmp(mod->dynstr + mod->dynsym[i].st_name, symbol) == 0)
-      return mod->text_base + mod->dynsym[i].st_value;
+      return i;
   }
 
-  return 0;
+  return -1;
+}
+
+uintptr_t so_symbol(so_module *mod, const char *symbol) {
+  int index = so_symbol_index(mod, symbol);
+  if (index == -1)
+    return NULL;
+
+  return mod->text_base + mod->dynsym[index].st_value;
+}
+
+void so_symbol_fix_ldmia(so_module *mod, const char *symbol)
+{
+  // This is meant to work around crashes due to unaligned accesses (SIGBUS :/) due to certain
+  // kernels not having the fault trap enabled, e.g. certain RK3326 Odroid Go Advance clone distros.
+  // TODO:: Maybe enable this only with a config flag? maybe with a list of known broken functions?
+  // Known to trigger on GM:S's "_Z11Shader_LoadPhjS_" - if it starts happening on other places,
+  // might be worth enabling it globally.
+  
+  int idx = so_symbol_index(mod, symbol);
+  if (idx == -1)
+    return;
+
+  uintptr_t st_addr = mod->text_base + mod->dynsym[idx].st_value;
+  for (uintptr_t addr = st_addr; addr < st_addr + mod->dynsym[idx].st_size; addr+=4) {
+    uint32_t inst = *(uint32_t*)(addr);
+    
+    //Is this an LDMIA instruction with a R0-R12 base register?
+    if (((inst & 0xFFF00000) == 0xE8900000) && (((inst >> 16) & 0xF) < SP) ) {
+      warning("Found possibly misaligned ldmia on 0x%08X, trying to fix it... (instr: 0x%08X, to 0x%08X)\n", addr, *(uint32_t*)addr, mod->patch_head);
+      trampoline_ldm(mod, addr);
+    }
+  }
 }
 
 void hook_symbol(so_module *mod, const char *symbol, uintptr_t dst, int is_optional)

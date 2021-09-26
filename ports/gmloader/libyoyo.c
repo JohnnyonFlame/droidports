@@ -179,19 +179,9 @@ void patch_specifics(so_module *mod)
     hook_symbol(libyoyo, "_Z13IO_Start_Stepv", IO_Start_Step_hook, 1);
 
     // This function uses unaligned addresses on a ldmia instruction as an optimization
-    // work around it with trampolines.
-    uintptr_t shd_load = so_symbol(mod, "_Z11Shader_LoadPhjS_");
-    if (shd_load) {
-        for (int i = 0; i < 2048; i++) {
-            uint32_t inst = *(uint32_t*)(shd_load + (i*sizeof(uint32_t)));
-            //Is this an LDMIA instruction, and not on pc?
-            if (((inst & 0xFFF00000) == 0xE8900000) && (((inst >> 16) & 0xF) != 0xC) ) {
-                warning("Found possibly misaligned ldmia on 0x%08X, trying to fix it...\n", shd_load + (i*sizeof(uint32_t)));
-                trampoline_ldm(shd_load + (i*sizeof(uint32_t)));
-                break;
-            }
-        }
-    }
+    // work around it with trampolines. If SIGBUSes happen on other address due to ldmia, might
+    // be interesting to add them here or implement the hack globally.
+    so_symbol_fix_ldmia(mod, "_Z11Shader_LoadPhjS_");
 }
 
 // Must be free'd after use.
