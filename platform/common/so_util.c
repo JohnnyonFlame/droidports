@@ -180,6 +180,13 @@ int so_load(so_module *mod, const char *filename, uintptr_t load_addr, void *so_
         mod->text_base = mod->phdr[i].p_vaddr;
         mod->text_size = mod->phdr[i].p_memsz;
 
+        // Use the .text segment padding as a code cave
+        mod->cave_size = prog_size - mod->phdr[i].p_memsz;
+        mod->cave_base = mod->cave_head = prog_data + mod->phdr[i].p_memsz;
+        mod->cave_head = mod->cave_base;
+        warning("code cave: %d bytes (@0x%08X).\n", mod->cave_size, mod->cave_base);
+
+        // Find where .data sits at
         data_addr = (uintptr_t)prog_data + prog_size;
       } else {
         if (data_addr == 0)

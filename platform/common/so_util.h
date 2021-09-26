@@ -33,9 +33,13 @@ ABI_ATTR typedef int (* init_array_t)();
 typedef struct so_module {
   struct so_module *next;
 
+  // The cave and patch arenas are both usable for code generation (e.g. for code instrumentation).
+  // patch arena is allocated prior to the .text segment, while the cave is the padding region used
+  // to align segments, and thus left free to use as a code cave (see "p_align" member of the
+  // program header table entries).
   uintptr_t patch_blockid, text_blockid, data_blockid;
-  uintptr_t patch_base, patch_head, text_base, data_base;
-  size_t patch_size, text_size, data_size;
+  uintptr_t patch_base, patch_head, cave_base, cave_head, text_base, data_base;
+  size_t patch_size, cave_size, text_size, data_size;
 
   Elf32_Ehdr *ehdr;
   Elf32_Phdr *phdr;
