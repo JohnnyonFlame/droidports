@@ -23,6 +23,7 @@
 #include "asm_encodings.h"
 #include "zip_util.h"
 
+#define PATCH_SZ 0x10000 //64 KB-ish arenas
 static so_module *head = NULL, *tail = NULL;
 
 static void trampoline_ldm(so_module *mod, uint32_t *dst)
@@ -160,7 +161,7 @@ int so_load(so_module *mod, const char *filename, uintptr_t load_addr, void *so_
       if ((mod->phdr[i].p_flags & PF_X) == PF_X) {
         // Allocate arena for code patches, trampolines, etc
         // Sits exactly under the desired allocation space
-        mod->patch_size = ALIGN_MEM(0x10000, mod->phdr[i].p_align);
+        mod->patch_size = ALIGN_MEM(PATCH_SZ, mod->phdr[i].p_align);
         mod->patch_blockid = block_alloc(1, load_addr - mod->patch_size, mod->patch_size);
         mod->patch_base = block_get_base_address(mod->patch_blockid);
         mod->patch_head = mod->patch_base;
