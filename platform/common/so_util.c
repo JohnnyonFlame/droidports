@@ -20,6 +20,7 @@
 #include "crc32.h"
 #include "platform.h"
 #include "so_util.h"
+#include "asm_encodings.h"
 #include "zip_util.h"
 
 static so_module *head = NULL, *tail = NULL;
@@ -73,7 +74,7 @@ void hook_thumb(uintptr_t addr, uintptr_t dst) {
 #if ARCH_ARMV6
   uint32_t hook[3];
   hook[0] = 0x46c04778; // BX PC; NO-OP (MOV R8, R8)
-  hook[1] = 0xe51ff004; // LDR PC, [PC, #-0x4]
+  hook[1] = LDR_OFFS(PC, PC, -0x4).raw;
   hook[2] = dst;
 #else
   uint32_t hook[2];
@@ -87,7 +88,7 @@ void hook_arm(uintptr_t addr, uintptr_t dst) {
   if (addr == 0)
     return;
   uint32_t hook[2];
-  hook[0] = 0xe51ff004; // LDR PC, [PC, #-0x4]
+  hook[0] = LDR_OFFS(PC, PC, -0x4).raw; // LDR PC, [PC, #-0x4]
   hook[1] = dst;
   unrestricted_memcpy((void *)addr, hook, sizeof(hook));
 }
