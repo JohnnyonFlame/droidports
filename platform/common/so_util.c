@@ -26,6 +26,33 @@
 #define PATCH_SZ 0x10000 //64 KB-ish arenas
 static so_module *head = NULL, *tail = NULL;
 
+/*
+ * alloc_arena: allocates space on either patch or cave arenas, 
+ * range: maximum range from allocation to dst (ignored if NULL)
+ * dst: destination address
+*/
+static uintptr_t so_alloc_arena(so_module *so, uintptr_t range, uintptr_t dst, size_t sz)
+{
+  // Is address in range?
+  #define inrange(lsr, gtr, range) \
+    (((uintptr_t)(range) == (uintptr_t)NULL) || ((uintptr_t)(range) >= ((uintptr_t)(gtr) - (uintptr_t)(lsr))))
+  // Space left on block
+  #define blkavail(type) (so->type##_size - (so->type##_head - so->type##_base))
+  
+  // keep allocations 4-byte aligned for simplicity
+  sz = ALIGN_MEM(sz, 4);
+
+  if (sz <= (blkavail(patch)) && inrange(so->patch_base, dst, range)) {
+    so->patch_head += sz;
+    return (so->patch_head - sz);
+  } else if (sz <= (blkavail(cave)) && inrange(dst, so->cave_base, range)) {
+    so->cave_head += sz;
+    return (so->cave_head - sz);
+  }
+
+  return (uintptr_t)NULL;
+}
+
 static void trampoline_ldm(so_module *mod, uint32_t *dst)
 {
   uint32_t trampoline[1];
@@ -56,13 +83,20 @@ static void trampoline_ldm(so_module *mod, uint32_t *dst)
 
   *ptr++ = LDR_OFFS(PC, PC, -0x4).raw;                  // LDR PC, [PC, -0x4]  ; jmp to [dst+0x4]
   *ptr++ = dst+1;                                       // .dword <...>        ; [dst+0x4]
+
+  size_t trampoline_sz =  ((uintptr_t)ptr - (uintptr_t)&funct[0]);
+  uintptr_t patch_addr = so_alloc_arena(mod, B_RANGE, B_OFFSET(dst), trampoline_sz);
+
+  if (!patch_addr) {
+    fatal_error("Failed to patch ldmia at 0x%08X, unable to allocate space.\n", dst);
+    exit(-1);
+  }
   
   // Create sign extended relative address rel_addr
-  trampoline[0] = B(dst, mod->patch_head).raw;
+  trampoline[0] = B(dst, patch_addr).raw;
 
-  unrestricted_memcpy(mod->patch_head, funct, ((uintptr_t)ptr) - ((uintptr_t)funct));
+  unrestricted_memcpy(mod->patch_head, funct, trampoline_sz);
   unrestricted_memcpy(dst, trampoline, sizeof(trampoline));
-  mod->patch_head += (ptr - funct) * sizeof(uint32_t);
 }
 
 void hook_thumb(uintptr_t addr, uintptr_t dst) {
