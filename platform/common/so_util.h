@@ -75,7 +75,7 @@ typedef struct {
   int opt;
 } DynLibHooks;
 
-void hook_address(uintptr_t addr, uintptr_t dst);
+void hook_address(so_module *mod, uintptr_t addr, uintptr_t dst);
 void hook_symbol(so_module *mod, const char *symbol, uintptr_t dst, int is_optional);
 void hook_symbols(so_module *mod, DynLibHooks *hooks);
 

@@ -176,7 +176,7 @@ void patch_specifics(so_module *mod)
     // Rework the controller builtins
     register_gamepad_functs(fct_add);
     register_mouse_functs(fct_add);
-    hook_symbol(libyoyo, "_Z13IO_Start_Stepv", IO_Start_Step_hook, 1);
+    hook_symbol(mod, "_Z13IO_Start_Stepv", IO_Start_Step_hook, 1);
 
     // This function uses unaligned addresses on a ldmia instruction as an optimization
     // work around it with trampolines. If SIGBUSes happen on other address due to ldmia, might

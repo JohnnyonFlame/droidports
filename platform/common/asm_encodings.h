@@ -1,6 +1,8 @@
 #ifndef __ASM_ENCODINGS_H__
 #define __ASM_ENCODINGS_H__
 
+#include <stdint.h>
+
 typedef enum registers {
     R0 = 0,
     R1 = 1,
@@ -20,6 +22,8 @@ typedef enum registers {
     PC  = 15,
 } registers;
 
+#define B_RANGE ((1 << 24) - 1)
+#define B_OFFSET(x) (x + 8) // branch jumps into addr - 8, so range is biased forward
 #define B(PC, DEST)  ((b_enc){.bits = {.cond = 0b1110, .enc = 0b101, .l = 0, .imm24 = (((intptr_t)DEST-(intptr_t)PC) >> 2) - 2}})
 #define BL(PC, DEST) ((b_enc){.bits = {.cond = 0b1110, .enc = 0b101, .l = 1, .imm24 = (((intptr_t)DEST-(intptr_t)PC) >> 2) - 2}})
 typedef struct b_enc {

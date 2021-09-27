@@ -99,44 +99,66 @@ static void trampoline_ldm(so_module *mod, uint32_t *dst)
   unrestricted_memcpy(dst, trampoline, sizeof(trampoline));
 }
 
-void hook_thumb(uintptr_t addr, uintptr_t dst) {
+void hook_thumb(so_module *mod, uintptr_t addr, uintptr_t dst) {
   if (addr == 0)
     return;
   addr &= ~1;
+
+  // Align to word boundary with no-op
   if (addr & 2) {
     uint16_t nop = 0x46c0; // NO-OP (MOV R8, R8)
     unrestricted_memcpy((void *)addr, &nop, sizeof(nop));
     addr += 2;
   }
 
-#if ARCH_ARMV6
-  uint32_t hook[3];
-  hook[0] = 0x46c04778; // BX PC; NO-OP (MOV R8, R8)
-  hook[1] = LDR_OFFS(PC, PC, -0x4).raw;
-  hook[2] = dst;
-#else
   uint32_t hook[2];
+#if ARCH_ARMV6
+  // the BRANCH instruction is offset by a word due to the
+  // thumb-to-arm transition (aka "BX PC").
+  uintptr_t b_addr = addr + 4;
+
+  // populate the (addr -> trampoline -> dst) trampoline.
+  uint32_t trampoline[2];
+  uintptr_t trampoline_addr = so_alloc_arena(mod, B_RANGE, B_OFFSET(b_addr), 2 * sizeof(uint32_t));
+  trampoline[0] = LDR_OFFS(PC, PC, -4).raw;
+  trampoline[1] = dst;
+  unrestricted_memcpy(trampoline_addr, trampoline, sizeof(trampoline));
+  printf("alloc in 0x%08X\n", trampoline_addr);
+
+  // Leave Thumb-mode and branch into trampoline
+  hook[0] = 0x46c04778; // BX PC ; NO-OP (MOV R8, R8)
+  hook[1] = B(b_addr, trampoline_addr).raw;
+#else
+  // Jump straight into the routine - no need for trampolines on ARMv7
   hook[0] = 0xf000f8df; // LDR PC, [PC]
   hook[1] = dst;
 #endif
   unrestricted_memcpy((void *)addr, hook, sizeof(hook));
 }
 
-void hook_arm(uintptr_t addr, uintptr_t dst) {
+void hook_arm(so_module *mod, uintptr_t addr, uintptr_t dst) {
   if (addr == 0)
     return;
-  uint32_t hook[2];
-  hook[0] = LDR_OFFS(PC, PC, -0x4).raw; // LDR PC, [PC, #-0x4]
-  hook[1] = dst;
+
+  // Allocate and populate trampoline
+  uint32_t trampoline[2];
+  uintptr_t trampoline_addr = so_alloc_arena(mod, B_RANGE, B_OFFSET(addr), sizeof(trampoline));
+  trampoline[0] = LDR_OFFS(PC, PC, -0x4).raw; // LDR PC, [PC, #-0x4]
+  trampoline[1] = dst;
+  unrestricted_memcpy(trampoline_addr, trampoline, sizeof(trampoline));
+
+  // Hook the function
+  uint32_t hook[1];
+  hook[0] = B(addr, trampoline_addr).raw;
   unrestricted_memcpy((void *)addr, hook, sizeof(hook));
 }
 
-void hook_address(uintptr_t addr, uintptr_t dst) {
+void hook_address(so_module *mod, uintptr_t addr, uintptr_t dst) {
   // Instead of guessing - check LSB for the "thumb" mode bit
   if ((long)addr & 1)
-    hook_thumb(addr, dst);
+    hook_thumb(mod, addr, dst);
   else
-    hook_arm(addr, dst);
+    hook_arm(mod, addr, dst);
 }
 
 #ifdef NDEBUG
@@ -500,7 +522,7 @@ int so_resolve(so_module *mod) {
     for (int j = 0; funcs[j].symbol != NULL; j++) {
       if (addr = so_symbol(mod, funcs[j].symbol)) {
         warning("Patching %s (%s)...\n", funcs[j].symbol, (addr & 1) ? "thumb": "arm");
-        hook_address(addr, funcs[j].func);
+        hook_address(mod, addr, funcs[j].func);
       }
     }
   }
@@ -587,7 +609,7 @@ void hook_symbol(so_module *mod, const char *symbol, uintptr_t dst, int is_optio
 {
   uintptr_t address;
   if (address = so_symbol(mod, symbol)) {
-    hook_address(address, dst);
+    hook_address(mod, address, dst);
   } else if (!is_optional) {
     fatal_error("Failed to perform non-optional hook for symbol \"%s\"!\n", symbol);
     exit(-1);
