@@ -426,7 +426,7 @@ void reloc_err(uintptr_t got0)
         case R_ARM_JUMP_SLOT:
         {
           if (got0 == (uintptr_t)ptr) {
-            fatal_error("Unknown symbol \"%s\" (0x%p).\n", curr->dynstr + sym->st_name, (void*)got0);
+            fatal_error("Unknown symbol \"%s\" (%p).\n", curr->dynstr + sym->st_name, (void*)got0);
             exit(-1);
           }
           break;
@@ -436,7 +436,7 @@ void reloc_err(uintptr_t got0)
   }
 
   // Ooops, this shouldn't have happened.
-  fatal_error("Unknown symbol \"???\" (0x%p).\n", (void*)got0);
+  fatal_error("Unknown symbol \"???\" (%p).\n", (void*)got0);
   exit(-1);
 }
 
