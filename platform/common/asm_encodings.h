@@ -53,4 +53,4 @@ typedef struct ldst_enc {
   };
 } ldst_enc;
 
-#endif __ASM_ENCODINGS_H__
+#endif // __ASM_ENCODINGS_H__
