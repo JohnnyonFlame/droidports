@@ -357,8 +357,8 @@ int so_relocate(so_module *mod) {
     uintptr_t *ptr = (uintptr_t *)(mod->text_base + rel->r_offset);
 
     int type = ELF32_R_TYPE(rel->r_info);
-    if ((ptr >= &mod->init_array[0]) && (ptr <= &mod->init_array[mod->num_init_array-1]))
-      printf("reloc 0x%08X type %d p 0x%08X\n", ptr, type, *ptr + mod->text_base);
+    // if ((ptr >= &mod->init_array[0]) && (ptr <= &mod->init_array[mod->num_init_array-1]))
+    //   printf("reloc 0x%08X type %d p 0x%08X\n", ptr, type, *ptr + mod->text_base);
     switch (type) {
       case R_ARM_ABS32:
         *ptr += mod->text_base + sym->st_value;
@@ -530,7 +530,7 @@ int so_resolve(so_module *mod) {
 
     for (int j = 0; funcs[j].symbol != NULL; j++) {
       if (addr = so_symbol(mod, funcs[j].symbol)) {
-        warning("Patching %s (%s)...\n", funcs[j].symbol, (addr & 1) ? "thumb": "arm");
+        // warning("Patching %s (%s)...\n", funcs[j].symbol, (addr & 1) ? "thumb": "arm");
         hook_address(mod, addr, funcs[j].func);
       }
     }
