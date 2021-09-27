@@ -132,7 +132,7 @@ ABI_ATTR void IO_Start_Step_hook()
     if (*g_MousePosX > Graphics_DisplayWidth()) *g_MousePosX = Graphics_DisplayWidth();
     if (*g_MousePosY > Graphics_DisplayHeight()) *g_MousePosY = Graphics_DisplayHeight();
 
-    g_IOFrameCount++;
+    *g_IOFrameCount = *g_IOFrameCount + 1;
     GamepadUpdate();
 }
 
