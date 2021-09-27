@@ -63,11 +63,11 @@ void flip_display_surface()
 static int update_button(int new_state, int old_state)
 {
     if (new_state == GAMEPAD_BUTTON_STATE_HELD) {
-        if (old_state < GAMEPAD_BUTTON_STATE_HELD)
+        if (old_state == GAMEPAD_BUTTON_STATE_NEUTRAL)
             return GAMEPAD_BUTTON_STATE_DOWN;
         return GAMEPAD_BUTTON_STATE_HELD;
     } else {
-        if (old_state > GAMEPAD_BUTTON_STATE_NEUTRAL)
+        if (old_state == GAMEPAD_BUTTON_STATE_HELD)
             return GAMEPAD_BUTTON_STATE_UP;
         return GAMEPAD_BUTTON_STATE_NEUTRAL;
     }

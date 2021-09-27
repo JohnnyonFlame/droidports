@@ -12,9 +12,9 @@ Gamepad yoyo_gamepads[4] = {
     }
 };
 
-#define IS_AXIS_BOUNDS (axis >= 0 && axis < ARRAY_SIZE(yoyo_gamepads[0].axis))
-#define IS_BTN_BOUNDS  (btn  >= 0 && btn  < ARRAY_SIZE(yoyo_gamepads[0].buttons))
-#define IS_CONTROLLER_BOUNDS (id >= 0 && id < ARRAY_SIZE(yoyo_gamepads))
+#define IS_AXIS_BOUNDS ((axis >= 0) && (axis < ARRAY_SIZE(yoyo_gamepads[0].axis)))
+#define IS_BTN_BOUNDS  ((btn  >= 0) && (btn  < ARRAY_SIZE(yoyo_gamepads[0].buttons)))
+#define IS_CONTROLLER_BOUNDS ((id >= 0) && (id < ARRAY_SIZE(yoyo_gamepads)))
 
 // (RValue *ret, void *self, void *other, int argc, RValue *args)
 ABI_ATTR void gamepad_is_supported(RValue *ret, void *self, void *other, int argc, RValue *args)
@@ -25,14 +25,10 @@ ABI_ATTR void gamepad_is_supported(RValue *ret, void *self, void *other, int arg
 
 ABI_ATTR void gamepad_get_device_count(RValue *ret, void *self, void *other, int argc, RValue *args)
 {
+    // Documentation claims this can be "the number of available "slots" for game pads to be connected to."
+    // and since this is the upper-end, we're using that.
     ret->kind = VALUE_REAL;
-    int count = 0;
-    for (int i = 0; i < ARRAY_SIZE(yoyo_gamepads); i++) {
-        if (yoyo_gamepads[i].is_available)
-            count++;
-    }
-
-    ret->rvalue.val = (double)count;
+    ret->rvalue.val = (double)ARRAY_SIZE(yoyo_gamepads);
 }
 
 ABI_ATTR void gamepad_is_connected(RValue *ret, void *self, void *other, int argc, RValue *args)
@@ -100,6 +96,7 @@ ABI_ATTR void gamepad_button_check(RValue *ret, void *self, void *other, int arg
     ret->kind = VALUE_REAL;
     int id = (int)args[0].rvalue.val;
     int btn = (int)(args[1].rvalue.val - gp_face1);
+
     if (!IS_CONTROLLER_BOUNDS || !IS_BTN_BOUNDS) {
         ret->rvalue.val = 0.0f;
         return;
@@ -112,6 +109,7 @@ ABI_ATTR void gamepad_button_check_pressed(RValue *ret, void *self, void *other,
     ret->kind = VALUE_REAL;
     int id = (int)args[0].rvalue.val;
     int btn = (int)(args[1].rvalue.val - gp_face1);
+
     if (!IS_CONTROLLER_BOUNDS || !IS_BTN_BOUNDS) {
         ret->rvalue.val = 0.0f;
         return;
@@ -125,6 +123,7 @@ ABI_ATTR void gamepad_button_check_released(RValue *ret, void *self, void *other
     ret->kind = VALUE_REAL;
     int id = (int)args[0].rvalue.val;
     int btn = (int)(args[1].rvalue.val - gp_face1);
+
     if (!IS_CONTROLLER_BOUNDS || !IS_BTN_BOUNDS) {
         ret->rvalue.val = 0.0f;
         return;
