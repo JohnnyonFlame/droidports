@@ -123,7 +123,6 @@ void hook_thumb(so_module *mod, uintptr_t addr, uintptr_t dst) {
   trampoline[0] = LDR_OFFS(PC, PC, -4).raw;
   trampoline[1] = dst;
   unrestricted_memcpy(trampoline_addr, trampoline, sizeof(trampoline));
-  printf("alloc in 0x%08X\n", trampoline_addr);
 
   // Leave Thumb-mode and branch into trampoline
   hook[0] = 0x46c04778; // BX PC ; NO-OP (MOV R8, R8)
