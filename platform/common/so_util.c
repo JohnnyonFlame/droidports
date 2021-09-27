@@ -454,6 +454,23 @@ int so_resolve(so_module *mod) {
     }
   }
 
+  // Will look for symbols inside the modules which are included in one of the
+  // static patches provided in main.c.
+  // This will patch out all statically compiled symbols it can find with one of
+  // the available bridges. E.g., for fixing issues with broken audio or fonts on 
+  // certain GameMaker: Studio runner versions.
+  for (int i = 0; so_static_patches[i] != NULL; i++) {
+    DynLibFunction *funcs = so_static_patches[i];
+    uintptr_t addr;
+
+    for (int j = 0; funcs[j].symbol != NULL; j++) {
+      if (addr = so_symbol(mod, funcs[j].symbol)) {
+        warning("Patching %s (%s)...\n", funcs[j].symbol, (addr & 1) ? "thumb": "arm");
+        hook_address(addr, funcs[j].func);
+      }
+    }
+  }
+
   return 0;
 }
 
