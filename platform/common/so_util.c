@@ -247,26 +247,30 @@ int so_load(so_module *mod, const char *filename, uintptr_t load_addr, void *so_
         if (data_addr == 0)
           goto err_free_so;
 
+        if (mod->n_data >= MAX_DATA_SEG)
+          goto err_free_data;
+        
         prog_size = ALIGN_MEM(mod->phdr[i].p_memsz + mod->phdr[i].p_vaddr - (data_addr - mod->text_base), mod->phdr[i].p_align);
-        mod->data_blockid = block_alloc(0, data_addr, prog_size);
+        mod->data_blockid[mod->n_data] = block_alloc(0, data_addr, prog_size);
 
-        if (mod->data_blockid < 0)
+        if (mod->data_blockid[mod->n_data] < 0)
           goto err_free_text;
 
-        prog_data = block_get_base_address(mod->data_blockid);
+        prog_data = block_get_base_address(mod->data_blockid[mod->n_data]);
+        data_addr = prog_data + prog_size; // for the next one
 
         mod->phdr[i].p_vaddr += (Elf32_Addr)mod->text_base;
 
-        mod->data_base = mod->phdr[i].p_vaddr;
-        mod->data_size = mod->phdr[i].p_memsz;
+        mod->data_base[mod->n_data] = mod->phdr[i].p_vaddr;
+        mod->data_size[mod->n_data] = mod->phdr[i].p_memsz;
+        mod->n_data++;
       }
 
-      char *zero = malloc(prog_size);
-      memset(zero, 0, prog_size);
-      unrestricted_memcpy(prog_data, zero, prog_size);
-      free(zero);
-
+      size_t zero_sz = prog_size - mod->phdr[i].p_filesz;
+      char *zero = calloc(zero_sz, 1);
+      unrestricted_memcpy(prog_data + mod->phdr[i].p_filesz, zero, zero_sz);
       unrestricted_memcpy((void *)mod->phdr[i].p_vaddr, (void *)((uintptr_t)so_data + mod->phdr[i].p_offset), mod->phdr[i].p_filesz);
+      free(zero);
     }
   }
 
@@ -336,7 +340,8 @@ int so_load(so_module *mod, const char *filename, uintptr_t load_addr, void *so_
 
   // Oops
 err_free_data:
-  block_free(mod->data_blockid, mod->data_size);
+  for (int i = 0; i < mod->n_data; i++)
+    block_free(mod->data_blockid[i], mod->data_size[i]);
 err_free_text:
   block_free(mod->text_blockid, mod->text_size);
 err_free_so:
@@ -352,6 +357,8 @@ int so_relocate(so_module *mod) {
     uintptr_t *ptr = (uintptr_t *)(mod->text_base + rel->r_offset);
 
     int type = ELF32_R_TYPE(rel->r_info);
+    if ((ptr >= &mod->init_array[0]) && (ptr <= &mod->init_array[mod->num_init_array-1]))
+      printf("reloc 0x%08X type %d p 0x%08X\n", ptr, type, *ptr + mod->text_base);
     switch (type) {
       case R_ARM_ABS32:
         *ptr += mod->text_base + sym->st_value;
@@ -406,12 +413,15 @@ uintptr_t so_resolve_link(so_module *mod, const char *symbol) {
 void reloc_err(uintptr_t got0)
 {
   // Find to which module this missing symbol belongs
+  int found = 0;
   so_module *curr = head;
-  while (curr) {
-    if ((got0 >= curr->data_base) && (got0 <= curr->data_base + curr->data_size))
-      break;
+  while (curr && !found) {
+    for (int i = 0; i < curr->n_data; i++)
+      if ((got0 >= curr->data_base[i]) && (got0 <= curr->data_base[i] + curr->data_size[i]))
+        found = 1;
     
-    curr = curr->next;
+    if (!found)
+      curr = curr->next;
   }
 
   if (curr) {

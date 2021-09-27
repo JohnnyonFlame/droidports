@@ -29,6 +29,8 @@ extern "C" {
     } \
   }
 
+
+#define MAX_DATA_SEG 4
 ABI_ATTR typedef int (* init_array_t)();
 typedef struct so_module {
   struct so_module *next;
@@ -37,9 +39,10 @@ typedef struct so_module {
   // patch arena is allocated prior to the .text segment, while the cave is the padding region used
   // to align segments, and thus left free to use as a code cave (see "p_align" member of the
   // program header table entries).
-  uintptr_t patch_blockid, text_blockid, data_blockid;
-  uintptr_t patch_base, patch_head, cave_base, cave_head, text_base, data_base;
-  size_t patch_size, cave_size, text_size, data_size;
+  uintptr_t patch_blockid, text_blockid, data_blockid[MAX_DATA_SEG];
+  uintptr_t patch_base, patch_head, cave_base, cave_head, text_base, data_base[MAX_DATA_SEG];
+  size_t patch_size, cave_size, text_size, data_size[MAX_DATA_SEG];
+  int n_data;
 
   Elf32_Ehdr *ehdr;
   Elf32_Phdr *phdr;
