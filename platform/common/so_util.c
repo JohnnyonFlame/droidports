@@ -95,7 +95,7 @@ static void trampoline_ldm(so_module *mod, uint32_t *dst)
   // Create sign extended relative address rel_addr
   trampoline[0] = B(dst, patch_addr).raw;
 
-  unrestricted_memcpy(mod->patch_head, funct, trampoline_sz);
+  unrestricted_memcpy((void*)patch_addr, funct, trampoline_sz);
   unrestricted_memcpy(dst, trampoline, sizeof(trampoline));
 }
 
