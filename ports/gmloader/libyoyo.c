@@ -5,6 +5,7 @@
 #include <string.h>
 #include <lodepng.h>
 #include <math.h>
+#include <unistd.h>
 
 #include "platform.h"
 #include "so_util.h"
@@ -19,6 +20,7 @@
 so_module *libyoyo = NULL;
 
 uintptr_t *New_Room = NULL;
+uintptr_t *Current_Room = NULL;
 fct_add_t Function_Add = NULL;
 create_ds_map_t CreateDsMap = NULL;
 create_async_event_with_ds_map_t CreateAsynEventWithDSMap = NULL;
@@ -46,6 +48,8 @@ ABI_ATTR int32_t (*YYGetInt32)(RValue *val, int idx) = NULL;
 ABI_ATTR int32_t (*Graphics_DisplayWidth)() = NULL;
 ABI_ATTR int32_t (*Graphics_DisplayHeight)() = NULL;
 ABI_ATTR float (*Audio_GetTrackPos)(int sound_id) = NULL;
+
+ABI_ATTR routine_t F_YoYo_DrawTextureFlush = NULL;
 
 uint8_t prev_kbd_state[N_KEYS] = {};
 uint8_t cur_keys[N_KEYS] = {};
@@ -325,6 +329,31 @@ static void createSplashTexture(zip_t *apk, GLuint *tex, int *w_tex, int *h_tex,
     free(pixels);
 }
 
+static int prev_room = 0xFFFFFFFF;
+unsigned long long flushWhenFull()
+{
+    ENSURE_SYMBOL(libyoyo, g_IOFrameCount, "g_IOFrameCount");
+    ENSURE_SYMBOL(libyoyo, Current_Room, "Current_Room");
+
+    // Don't flush outside of room transitions
+    if (*Current_Room == prev_room)
+        return;
+
+    prev_room = *Current_Room;
+    if (!F_YoYo_DrawTextureFlush) {
+        F_YoYo_DrawTextureFlush = FindFunctionRoutine("draw_texture_flush");
+        if (!F_YoYo_DrawTextureFlush)
+            return;
+    }
+
+    long long mb_avphys = get_avphys_pages() * sysconf(_SC_PAGESIZE);
+    if (mb_avphys < (MIN_FREE_MEM)) {
+        RValue ret;
+        F_YoYo_DrawTextureFlush(&ret, NULL, NULL, 0, NULL);
+        glFlush();
+    }
+}
+
 //TODO:: APK path, savepath, etc, shouldn't be hardcoded
 void invoke_app(zip_t *apk, const char *apk_path)
 {
@@ -414,6 +443,8 @@ void invoke_app(zip_t *apk, const char *apk_path)
         ret = RunnerJNILib_Process(env, 0x0, w, h, 0, 0, 0, 0, 0, 60);
 		if (RunnerJNILib_canFlip(env, NULL))
         	flip_display_surface();
+        
+        flushWhenFull();
     } while (ret != 0 && ret != 2);
 
     warning("yoyo died.\n");

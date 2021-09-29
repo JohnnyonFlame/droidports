@@ -48,4 +48,6 @@
 #define PATH_MAX 4096
 #endif
 
+#define MIN_FREE_MEM 48 * 1024 * 1024
+
 #endif /* __PLATFORM_H__ */

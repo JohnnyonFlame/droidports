@@ -162,6 +162,7 @@ typedef ABI_ATTR int  (*create_ds_map_t)(int, ...);
 typedef ABI_ATTR void (*create_async_event_with_ds_map_t)(int, int);
 
 extern uintptr_t *New_Room;
+extern uintptr_t *Current_Room;
 extern fct_add_t Function_Add;
 extern create_ds_map_t CreateDsMap;
 extern create_async_event_with_ds_map_t CreateAsynEventWithDSMap;
