@@ -33,7 +33,7 @@ uint8_t *_IO_CurrentKey = NULL;
 uint8_t *_IO_KeyPressed = NULL;
 uint8_t *_IO_KeyReleased = NULL;
 
-void (*GamepadUpdate)() = NULL;
+ABI_ATTR void (*GamepadUpdate)() = NULL;
 uint32_t *g_IOFrameCount = NULL;
 long long *g_GML_DeltaTime = NULL;
 char *g_fNoAudio = NULL;
