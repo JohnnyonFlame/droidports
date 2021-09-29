@@ -166,10 +166,6 @@ extern fct_add_t Function_Add;
 extern create_ds_map_t CreateDsMap;
 extern create_async_event_with_ds_map_t CreateAsynEventWithDSMap;
 
-extern uintptr_t *New_Room;
-extern fct_add_t Function_Add;
-extern create_ds_map_t CreateDsMap;
-extern create_async_event_with_ds_map_t CreateAsynEventWithDSMap;
 #define N_BUTTONS 30
 extern uint8_t *_IO_ButtonDown;
 extern uint8_t *_IO_ButtonPressed;
