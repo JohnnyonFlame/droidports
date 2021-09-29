@@ -4,6 +4,7 @@
 #include <zip.h>
 #include <string.h>
 #include <lodepng.h>
+#include <math.h>
 
 #include "platform.h"
 #include "so_util.h"
@@ -34,10 +35,13 @@ uint8_t *_IO_KeyReleased = NULL;
 
 void (*GamepadUpdate)() = NULL;
 uint32_t *g_IOFrameCount = NULL;
+long long *g_GML_DeltaTime = NULL;
+char *g_fNoAudio = NULL;
 
 ABI_ATTR int32_t (*YYGetInt32)(RValue *val, int idx) = NULL;
 ABI_ATTR int32_t (*Graphics_DisplayWidth)() = NULL;
 ABI_ATTR int32_t (*Graphics_DisplayHeight)() = NULL;
+ABI_ATTR float (*Audio_GetTrackPos)(int sound_id) = NULL;
 
 uint8_t prev_kbd_state[N_KEYS] = {};
 uint8_t cur_keys[N_KEYS] = {};
@@ -115,6 +119,52 @@ ABI_ATTR int force_platform_type_gms2(void *self, int n, RValue *args)
     args[0].rvalue.val = FORCE_PLATFORM;
 }
 
+static int last_track_id = -1;
+static double last_track_pos = 0.f;
+static uint32_t last_track_pos_frame = 0;
+ABI_ATTR void reimpl_F_AudioGetTrackPos(RValue *ret, void *self, void *other, int argc, RValue *args)
+{
+    ENSURE_SYMBOL(libyoyo, g_IOFrameCount, "g_IOFrameCount");
+    ENSURE_SYMBOL(libyoyo, g_GML_DeltaTime, "g_GML_DeltaTime");
+    ENSURE_SYMBOL(libyoyo, YYGetInt32, "_Z10YYGetInt32PK6RValuei");
+    ENSURE_SYMBOL(libyoyo, Audio_GetTrackPos, "_Z17Audio_GetTrackPosi");
+    ENSURE_SYMBOL(libyoyo, g_fNoAudio, "g_fNoAudio");
+    int sound_id;
+    if (*g_fNoAudio != '\0') {
+        return;
+    }
+
+    ret->kind = VALUE_REAL;
+    sound_id = YYGetInt32(args,0);
+
+    // Discard data if not from last frame or not from the same id
+    if ((last_track_id != sound_id) || (*g_IOFrameCount - last_track_pos_frame > 1)) {
+        ret->rvalue.val = Audio_GetTrackPos(sound_id);
+        last_track_pos = ret->rvalue.val;
+    } else {
+        // Reuse any data on this specific frame
+        if (last_track_pos_frame == *g_IOFrameCount) {
+            ret->rvalue.val = last_track_pos;
+        } else {
+            ret->rvalue.val = Audio_GetTrackPos(sound_id);
+
+            // For timestamps that are within margin of error, enforce monotonic behavior, 
+            // even if it means crafting ficticious timestamps.
+            // This works around an issue with compressed audio streaming causing bogus
+            // timestamp readings, leading to jittery or otherwise broken behavior on Deltarune Chapter 2
+            if (ret->rvalue.val < last_track_pos && fabs(ret->rvalue.val - last_track_pos) < 0.1f) {
+                ret->rvalue.val = last_track_pos + (double)*g_GML_DeltaTime / 1000000.0f;
+            }
+
+            // printf("frame %d, pos: %f, dt %f\n", *g_IOFrameCount, ret->rvalue.val, *g_GML_DeltaTime / 1000000.0f);
+        }
+    }
+    
+    last_track_pos_frame = *g_IOFrameCount;
+    last_track_id = sound_id;
+    last_track_pos = ret->rvalue.val;
+}
+
 // This hook disabled the majority of the input code, leaving this up to be implemented
 // in a per-platform basis. Check sdl2_media.c as an example.
 ABI_ATTR void IO_Start_Step_hook()
@@ -172,6 +222,13 @@ void patch_specifics(so_module *mod)
      * this was causing memory corruption and crashes in subsequent runs of your app"
      */
     fct_add("game_end", game_end_reimpl, 1, 1);
+
+    // Reworked "audio_sound_get_track_position" function
+    /* The provided built-in has non-monotonic, jittery behavior. This causes a plenthora of issues
+     * on games that depend on semi-accurate timestamps.
+     * This works around issues on Deltarune Chapter 2, such as missing beat blocks or jittery beat blocks. 
+     */
+    fct_add("audio_sound_get_track_position", reimpl_F_AudioGetTrackPos, 1, 1);
 
     // Rework the controller builtins
     register_gamepad_functs(fct_add);

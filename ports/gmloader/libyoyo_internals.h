@@ -182,6 +182,10 @@ ABI_ATTR extern int32_t (*YYGetInt32)(RValue *val, int idx);
 ABI_ATTR extern int32_t (*Graphics_DisplayWidth)();
 ABI_ATTR extern int32_t (*Graphics_DisplayHeight)();
 
+extern uint32_t *g_IOFrameCount;
+extern long long *g_GML_DeltaTime;
+extern char *g_fNoAudio;
+
 extern void register_gamepad_functs(fct_add_t);
 
 #endif /* __RUNNER_INTERNALS_H__ */
