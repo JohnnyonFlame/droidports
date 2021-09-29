@@ -38,6 +38,10 @@ uint32_t *g_IOFrameCount = NULL;
 long long *g_GML_DeltaTime = NULL;
 char *g_fNoAudio = NULL;
 
+// Built-in function tables 
+static RFunction **the_functions = NULL;
+static int *the_numb = NULL;
+
 ABI_ATTR int32_t (*YYGetInt32)(RValue *val, int idx) = NULL;
 ABI_ATTR int32_t (*Graphics_DisplayWidth)() = NULL;
 ABI_ATTR int32_t (*Graphics_DisplayHeight)() = NULL;
@@ -81,6 +85,20 @@ ABI_ATTR int _dbg_csol_print(void *csol, const char *fmt, ...) {
     warning("%s", csol_str);
     va_end(list);
     return ret;
+}
+
+static routine_t FindFunctionRoutine(const char *f)
+{
+    ENSURE_SYMBOL(libyoyo, the_functions, "the_functions");
+    ENSURE_SYMBOL(libyoyo, the_numb, "the_numb");
+    
+    for (int i = 0; i < *the_numb; i++) {
+        if (strcmp((*the_functions)[i].f_name, f) == 0) {
+            return (*the_functions)[i].f_routine;
+        }
+    }
+
+    return NULL;
 }
 
 static void noop()

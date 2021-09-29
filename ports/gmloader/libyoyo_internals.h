@@ -65,6 +65,14 @@ typedef struct Gamepad {
 	double axis[4];
 } Gamepad;
 
+typedef ABI_ATTR void (*routine_t)(RValue *ret, void *self, void *other, int argc, RValue *args);
+typedef struct RFunction {
+	char f_name[64];
+	routine_t f_routine;
+	int f_argnumb;
+	uint32_t m_UsageCount;
+} RFunction;
+
 #define os_windows    ((double)(0.0f))
 #define os_android    ((double)(4.0f))
 #define os_linux      ((double)(6.0f))
@@ -149,7 +157,6 @@ typedef struct Gamepad {
 extern Gamepad yoyo_gamepads[MAX_GAMEPADS];
  
 // Symbols from libyoyo.so
-typedef ABI_ATTR void (*routine_t)(RValue *ret, void *self, void *other, int argc, RValue *args);
 typedef ABI_ATTR void (*fct_add_t)(const char *name, routine_t func, int argc, char ret);
 typedef ABI_ATTR int  (*create_ds_map_t)(int, ...);
 typedef ABI_ATTR void (*create_async_event_with_ds_map_t)(int, int);
