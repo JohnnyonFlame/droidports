@@ -291,6 +291,7 @@ DynLibFunction symtable_misc[] = {
     {"localtime_r", (uintptr_t)&localtime_r},
     {"localtime64", (uintptr_t)&__localtime64},
     {"time", (uintptr_t)&time},
+    {"strftime", (uintptr_t)&strftime},
     {"setlocale", (uintptr_t)&setlocale},
 
     {"eglGetDisplay", (uintptr_t)&ret0},
