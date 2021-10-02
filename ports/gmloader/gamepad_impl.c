@@ -1,7 +1,9 @@
 #include <math.h>
 #include <SDL2/SDL.h> 
 #include "platform.h"
+#include "so_util.h"
 #include "libyoyo_internals.h"
+#include "libyoyo.h"
 
 Gamepad yoyo_gamepads[4] = {
     [0 ... 3] = {
@@ -183,6 +185,18 @@ ABI_ATTR void gamepad_set_colour(RValue *ret, void *self, void *other, int argc,
     
 }
 
+ABI_ATTR void GamePadRestart()
+{
+    ENSURE_SYMBOL(libyoyo, CreateDsMap, "_Z11CreateDsMapiz");
+    ENSURE_SYMBOL(libyoyo, CreateAsynEventWithDSMap, "_Z24CreateAsynEventWithDSMapii");
+
+    for (int i = 0; i < ARRAY_SIZE(yoyo_gamepads); i++) {
+        if (yoyo_gamepads[i].is_available) {
+            int dsMap = CreateDsMap(2, "event_type", 0, 0, "gamepad discovered", "pad_index", (double)i, 0);
+            CreateAsynEventWithDSMap(dsMap, 0x4b);
+        }
+    }
+}
 
 void register_gamepad_functs(fct_add_t fct_add)
 {
@@ -204,4 +218,5 @@ void register_gamepad_functs(fct_add_t fct_add)
     fct_add("gamepad_set_vibration", gamepad_set_vibration, 3, 1);
     fct_add("gamepad_set_color", gamepad_set_colour, 2, 1);
     fct_add("gamepad_set_colour", gamepad_set_colour, 2, 1);
+    hook_symbol(libyoyo, "_Z14GamePadRestartv", GamePadRestart, 1);   
 }
