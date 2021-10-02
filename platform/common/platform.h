@@ -13,7 +13,7 @@
 
 #define ARCH_ARMV6 (defined(__ARM_ARCH_6__) || defined(__ARM_ARCH_6J__) || defined(__ARM_ARCH_6K__) || defined(__ARM_ARCH_6Z__) || defined(__ARM_ARCH_6ZK__))
 
-#ifdef NDEBUG
+#ifdef DEBUG
     #ifndef PLATFORM_VITA
         #define fatal_error(msg, ...) { fprintf(stderr, "%s:%d: " msg, __FILE__, __LINE__, ##__VA_ARGS__); }
         #define warning(msg, ...) { fprintf(stderr, msg, ##__VA_ARGS__); }

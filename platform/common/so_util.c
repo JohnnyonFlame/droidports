@@ -160,7 +160,7 @@ void hook_address(so_module *mod, uintptr_t addr, uintptr_t dst) {
     hook_arm(mod, addr, dst);
 }
 
-#ifdef NDEBUG
+#ifdef DEBUG
 #pragma GCC push_options
 #pragma GCC optimize ("O0")
 void __gdb_breakpoint_add_symbol_file(so_module *mod, const char *fname)
@@ -176,7 +176,7 @@ int so_load(so_module *mod, const char *filename, uintptr_t load_addr, void *so_
   uintptr_t data_addr = 0;
 
   // If compiled with debug, dump the loaded binaries, before changes are made
-#ifdef NDEBUG
+#ifdef DEBUG
   uint32_t crc32_val = crc32(0xDEADBEEF, so_data, sz);
 
   // Extract filename from possible path
@@ -320,7 +320,7 @@ int so_load(so_module *mod, const char *filename, uintptr_t load_addr, void *so_
   }
 
   // If debugging is enabled, now trigger the gdb breakpoint.
-#ifdef NDEBUG
+#ifdef DEBUG
   if (written == sz)
     __gdb_breakpoint_add_symbol_file(mod, fname);
 #endif
