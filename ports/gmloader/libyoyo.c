@@ -346,7 +346,7 @@ unsigned long long flushWhenFull()
             return;
     }
 
-    long long mb_avphys = get_avphys_pages() * sysconf(_SC_PAGESIZE);
+    uint64_t mb_avphys = get_avphys_pages() * sysconf(_SC_PAGESIZE);
     if (mb_avphys < (MIN_FREE_MEM)) {
         RValue ret;
         F_YoYo_DrawTextureFlush(&ret, NULL, NULL, 0, NULL);
