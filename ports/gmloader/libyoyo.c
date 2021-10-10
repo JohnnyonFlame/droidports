@@ -6,6 +6,9 @@
 #include <lodepng.h>
 #include <math.h>
 #include <unistd.h>
+#include <sys/mman.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #include "platform.h"
 #include "so_util.h"
@@ -78,6 +81,34 @@ static char *fake_functs[] = {
     "psn_user_for_pad",
     NULL
 };
+
+static char platform_savedir[PATH_MAX] = "";
+void setup_platform_savedir(const char *gamename)
+{
+    //TODO:: Update psvita sdk and use the newlib mkdir.
+#ifndef PLATFORM_VITA
+    // For linux targets
+	snprintf(platform_savedir, sizeof(platform_savedir), "%s/.config/%s/", getenv("HOME"), gamename);
+	warning("Saving to folder %s.\n", platform_savedir);
+
+    char mkdir_cmd[PATH_MAX];
+    snprintf(mkdir_cmd, sizeof(mkdir_cmd), "mkdir -p %s", platform_savedir);
+
+    if (system(mkdir_cmd) != 0) {
+        fatal_error("Failed to create folder \"%s\".", platform_savedir);
+        exit(-1);
+    }
+#else
+    // For PS-vita target
+    snprintf(platform_savedir, sizeof(platform_savedir), "ux0:data/%s/", gamename);
+	warning("Saving to folder %s.\n", platform_savedir);
+#endif
+}
+
+const char *get_platform_savedir()
+{
+    return platform_savedir;
+}
 
 ABI_ATTR int _dbg_csol_print(void *csol, const char *fmt, ...) {
     char csol_str[2048];
@@ -208,6 +239,66 @@ ABI_ATTR void IO_Start_Step_hook()
     GamepadUpdate();
 }
 
+static void **g_pGameFileBuffer = NULL;
+static char **g_pWorkingDirectory = NULL;
+static int *g_GameFileLength = NULL; //android had 32bit off_t???
+static int g_fdGameFileBuffer = -1;
+static ABI_ATTR (*SetWorkingDirectory_ptr)() = NULL;
+ABI_ATTR void RunnerLoadGame_reimpl()
+{
+    //TODO:: Significantly improve this logic, e.g. with config files etc
+    ENSURE_SYMBOL(libyoyo, g_pGameFileBuffer, "g_pGameFileBuffer");
+    ENSURE_SYMBOL(libyoyo, g_GameFileLength, "g_GameFileLength");
+    ENSURE_SYMBOL(libyoyo, g_pWorkingDirectory, "g_pWorkingDirectory");
+
+    // Set current working directory
+    *g_pWorkingDirectory = strdup(get_platform_savedir());
+
+    // Attempt to load game.droid from the home folder
+    char WADNAME[PATH_MAX] = {};
+    snprintf(WADNAME, sizeof(WADNAME), "%s%s", get_platform_savedir(), "game.droid");
+    g_fdGameFileBuffer = open(WADNAME, O_RDONLY);
+    if (g_fdGameFileBuffer < 0) {
+        // If we failed to open the file, try to acquire it from the apk file
+        ssize_t sz;
+        if (!inflate_buf(get_current_apk(), "assets/game.droid", &sz, g_pGameFileBuffer)) {
+            fatal_error("Unable to load WAD! Check your data files.\n");
+            exit(-1);
+        }
+
+        *g_GameFileLength = (int)sz;
+        return;
+#if 0
+        warning("No WAD in '%s', attempting to extract...\n", WADNAME);
+        if (!inflate_file(get_current_apk(), "assets/game.droid", WADNAME)) {
+            fatal_error("Unable to load WAD! Check your data files.\n");
+            exit(-1);
+        }
+
+        g_fdGameFileBuffer = open(WADNAME, O_RDONLY);
+        if (g_fdGameFileBuffer < 0) {
+            fatal_error("Unable to load WAD after extraction!.\n");
+            exit(-1);
+        }
+#endif
+    }
+
+    // Since we got the file - let's stat it...
+    struct stat filestat;
+    if (fstat(g_fdGameFileBuffer, &filestat) != 0) {
+        fatal_error("Unable to stat WAD \"%s\"!\n", WADNAME);
+        exit(-1);
+    }
+
+    // and map it directly to ram as Copy on Write (PROT_WRITE and MAP_PRIVATE)
+    *g_GameFileLength = filestat.st_size;
+    *g_pGameFileBuffer = mmap(NULL, filestat.st_size, PROT_WRITE, MAP_PRIVATE, g_fdGameFileBuffer, 0);
+    if (*g_pGameFileBuffer == MAP_FAILED) {
+        fatal_error("Unable to mmap WAD \"%s\"!\n", WADNAME);
+        exit(-1);
+    }
+}
+
 void patch_specifics(so_module *mod)
 {
     libyoyo = mod;
@@ -221,6 +312,7 @@ void patch_specifics(so_module *mod)
         {"_Z7YYErrorPKcz", (uintptr_t)&YYError, 1},                                                // Hook error messages
         {"_Z23YoYo_GetPlatform_DoWorkv", (uintptr_t)&force_platform_type, 1},                      // Fake platform type
         {"_Z20GET_YoYo_GetPlatformP9CInstanceiP6RValue", (uintptr_t)&force_platform_type_gms2, 1}, // Fake platform type
+        {"_Z14RunnerLoadGamev", (uintptr_t)&RunnerLoadGame_reimpl, 1},                             // Custom game.droid loading mechanism
         {NULL}
     };
 
@@ -261,35 +353,6 @@ void patch_specifics(so_module *mod)
     // work around it with trampolines. If SIGBUSes happen on other address due to ldmia, might
     // be interesting to add them here or implement the hack globally.
     so_symbol_fix_ldmia(mod, "_Z11Shader_LoadPhjS_");
-}
-
-// Must be free'd after use.
-static char platform_savedir[PATH_MAX] = "";
-void setup_platform_savedir(const char *gamename)
-{
-    //TODO:: Update psvita sdk and use the newlib mkdir.
-#ifndef PLATFORM_VITA
-    // For linux targets
-	snprintf(platform_savedir, sizeof(platform_savedir), "%s/.config/%s/", getenv("HOME"), gamename);
-	warning("Saving to folder %s.\n", platform_savedir);
-
-    char mkdir_cmd[PATH_MAX];
-    snprintf(mkdir_cmd, sizeof(mkdir_cmd), "mkdir -p %s", platform_savedir);
-
-    if (system(mkdir_cmd) != 0) {
-        fatal_error("Failed to create folder \"%s\".", platform_savedir);
-        exit(-1);
-    }
-#else
-    // For PS-vita target
-    snprintf(platform_savedir, sizeof(platform_savedir), "ux0:data/%s/", gamename);
-	warning("Saving to folder %s.\n", platform_savedir);
-#endif
-}
-
-const char *get_platform_savedir()
-{
-    return platform_savedir;
 }
 
 static void createSplashTexture(zip_t *apk, GLuint *tex, int *w_tex, int *h_tex, int *w, int *h)
