@@ -185,8 +185,13 @@ int update_input()
     ENSURE_SYMBOL(libyoyo, _IO_ButtonDown, "_IO_ButtonDown");
     ENSURE_SYMBOL(libyoyo, _IO_ButtonPressed, "_IO_ButtonPressed");
     ENSURE_SYMBOL(libyoyo, _IO_ButtonReleased, "_IO_ButtonReleased");
+    ENSURE_SYMBOL(libyoyo, g_IOFrameCount, "g_IOFrameCount");
     ENSURE_SYMBOL(libyoyo, g_MousePosX, "g_MousePosX");
     ENSURE_SYMBOL(libyoyo, g_MousePosY, "g_MousePosY");
+
+    // Delay events by a single frame, fixes Death's Gambit
+    if (*g_IOFrameCount < 1)
+        return 1;
 
     memset(_IO_KeyPressed, 0, N_KEYS);
     memset(_IO_KeyReleased, 0, N_KEYS);

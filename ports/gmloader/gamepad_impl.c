@@ -52,8 +52,8 @@ ABI_ATTR void gamepad_get_description(RValue *ret, void *self, void *other, int 
 
     *ref = (Ref){
         .m_refCount = 1,
-        .m_size = strlen("Generic Pad"),
-        .m_thing = strdup("Generic Pad")
+        .m_size = strlen("Xbox 360 Controller (XInput STANDARD GAMEPAD)"),
+        .m_thing = strdup("Xbox 360 Controller (XInput STANDARD GAMEPAD)")
     };
 
     ret->kind = VALUE_STRING;
