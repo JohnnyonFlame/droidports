@@ -299,12 +299,19 @@ ABI_ATTR void RunnerLoadGame_reimpl()
     }
 }
 
+char Extension_Call_DLL_Function_reimpl(int id, int argc, RValue *args, RValue *ret)
+{
+    WARN_STUB;
+    return 0;
+}
+
 void patch_specifics(so_module *mod)
 {
     libyoyo = mod;
 
     // Apply function hooks
     DynLibHooks hooks[] = {
+        {"_Z27Extension_Call_DLL_FunctioniiP6RValueS0_", (uintptr_t)&Extension_Call_DLL_Function_reimpl, 1}, // Custom extension logic
         {"_ZN13MemoryManager10DumpMemoryEP7__sFILE", (uintptr_t)&noop, 1},                         // Skip memory dump
         {"_Z17alBufferDebugNamejPKc", (uintptr_t)&noop, 1},                                        // Skip OpenAL debug code
         // {"_ZN8TConsole6OutputEPKcz", (uintptr_t)&_dbg_csol_print, 1},                           // Hook debug output procedure
