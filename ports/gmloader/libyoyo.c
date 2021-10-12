@@ -239,11 +239,186 @@ ABI_ATTR void IO_Start_Step_hook()
     GamepadUpdate();
 }
 
+typedef struct CAudioGroup {
+    int m_eLoadState;
+    int m_groupId;
+    int m_soundCount;
+    int m_soundsAdded;
+    int m_soundsLoaded;
+    int m_loadProgress;
+    void * m_pData;
+    char * m_pszName;
+    struct CThread *m_pLoadThread;
+    struct cAudio_Sound **m_ppSoundList;
+} CAudioGroup;
+
+typedef struct CAudioGroupMan {
+    struct CAudioGroup **m_ppGroups;
+    int m_groupCount;
+} CAudioGroupMan;
+
+typedef struct CThread {
+    uint32_t m_hThread;
+    int m_errorCode;
+    char m_bTerminate;
+    char m_bRunning;
+    char m_bPaused;
+    char padding;
+    void * m_pFunctionArg;
+    void * (* m_pThreadFunc)(void *);
+    struct Mutex * m_pTermMutex;
+} CThread;
+
 static void **g_pGameFileBuffer = NULL;
 static char **g_pWorkingDirectory = NULL;
 static int *g_GameFileLength = NULL; //android had 32bit off_t???
 static int g_fdGameFileBuffer = -1;
-static ABI_ATTR (*SetWorkingDirectory_ptr)() = NULL;
+static ABI_ATTR void (*SetWorkingDirectory_ptr)() = NULL;
+static ABI_ATTR void (*Mutex__ctor)(void*, char*) = NULL;
+static ABI_ATTR int (*Audio_WAVs)(uint8_t*, uint32_t, uint8_t*, int) = NULL;
+static ABI_ATTR void (*CThread__start)(CThread *, void *, void *, char *) = NULL;
+static ABI_ATTR void (*Audio_PrepareGroup)(void*) = NULL;
+
+static ABI_ATTR int Audio_Load_cb(void *data)
+{
+    ENSURE_SYMBOL(libyoyo, Audio_PrepareGroup, "_Z18Audio_PrepareGroupi");
+
+    Audio_PrepareGroup(*(int *)(*(int *)(data + 0xc) + 4));
+    return 0;
+}
+
+// Recalls data about Audio Groups
+typedef struct AudioGroupInfo {
+    int fd;
+    void *memory_map;
+    size_t *memory_map_sz; 
+} AudioGroupInfo;
+
+static AudioGroupInfo *group_info = NULL;
+ABI_ATTR int CAudioGroupMan__LoadGroup_reimpl(CAudioGroupMan *this, int groupId)
+{
+    ENSURE_SYMBOL(libyoyo, Audio_WAVs, "_Z10Audio_WAVsPhjS_i");
+    ENSURE_SYMBOL(libyoyo, Mutex__ctor, "_ZN5MutexC1EPKc");
+    ENSURE_SYMBOL(libyoyo, CThread__start, "_ZN7CThread5StartEPFPvS0_ES0_PcNS_9ePriorityE");
+    CAudioGroup *piVar4;
+    char filename[PATH_MAX];
+    void *mem = NULL;
+    size_t mem_sz = 0;
+
+    if (!group_info) {
+        group_info = calloc(this->m_groupCount + 1, sizeof(group_info[0]));
+    }
+
+    if ((groupId < 1) || (this->m_groupCount <= groupId) || this->m_ppGroups[groupId] == NULL) {
+        fatal_error("Unable to initialize Audio Group %d!\n", groupId);
+        return 0;
+    }
+
+    snprintf(filename, sizeof(filename), "%saudiogroup%d.dat", get_platform_savedir(), groupId);
+    int fd = open(filename, O_RDONLY);
+    if (fd >= 0) {
+        struct stat st;
+        if (fstat(fd, &st) != 0) {
+            fatal_error("Unable to stat '%s'\n", filename);
+            goto audio_close_fd;
+        }
+
+        mem_sz = st.st_size;
+        mem = mmap(NULL, mem_sz, PROT_WRITE, MAP_PRIVATE, fd, NULL);
+    } else {
+        snprintf(filename, sizeof(filename), "assets/audiogroup%d.dat", groupId);
+        ssize_t sz_buf;
+        if (!inflate_buf(get_current_apk(), filename, &sz_buf, &mem)) {
+            fatal_error("Unable to open Audio Group %d!\n", filename);
+            return 0;
+        }
+        mem_sz = sz_buf;
+    }
+
+    if (strncmp(mem + 8, "AUDO", 4) != 0) {
+        fatal_error("Unable to stat '%s'\n", filename);
+        goto audio_free_buf;
+    }
+
+    CAudioGroup *grp = this->m_ppGroups[groupId];
+    grp->m_pData = mem;
+    grp->m_eLoadState = 1;
+    grp->m_loadProgress = 0;
+    grp->m_soundsLoaded = 0;
+    uint32_t sz = *(uint32_t*)(mem + 0xc);
+    if (sz == 0) {
+        fatal_error("Audiogroup '%s' is empty.\n", filename);
+        goto audio_close_fd;
+    }
+
+    Audio_WAVs(mem + 0x10, sz, mem, groupId);
+    CThread *thr = grp->m_pLoadThread;
+    if (thr == NULL) {
+        grp->m_pLoadThread = thr = malloc(sizeof(CThread));
+        *thr = (CThread){
+            .m_pTermMutex = malloc(8)
+        };
+
+        Mutex__ctor(thr->m_pTermMutex, "TermMutex");
+    }
+
+    CThread__start(thr, Audio_Load_cb, grp, "Audio group load thread");
+    group_info[groupId].fd = fd;
+    group_info[groupId].memory_map = mem;
+    group_info[groupId].memory_map_sz = mem_sz;
+    return 1;
+
+audio_free_buf:
+    if (fd < 0)
+        free(mem);
+    else {
+        munmap(mem, mem_sz);
+        close(fd);
+    }
+audio_close_fd:
+    if (fd >= 0)
+        close(fd);
+
+    return 0;
+}
+
+extern void _ZdlPv(void *); //operator.delete
+static ABI_ATTR (*Mutex__dtor)(void *) = NULL;
+static ABI_ATTR (*MemoryManager__Free)(void *) = NULL;
+ABI_ATTR CAudioGroup *CAudioGroup_dtor(CAudioGroup *this)
+{
+    // Since we have custom allocations, this dtor needs to be reimplemented...
+    ENSURE_SYMBOL(libyoyo, Mutex__dtor, "_ZN5MutexD2Ev", "_ZN5MutexD1Ev");
+    ENSURE_SYMBOL(libyoyo, MemoryManager__Free, "_ZN13MemoryManager4FreeEPv", "_ZN13MemoryManager4FreeEPKv");
+
+    if (this->m_pLoadThread != NULL) {
+        if (this->m_pLoadThread->m_pTermMutex) {
+            Mutex__dtor(this->m_pLoadThread->m_pTermMutex);
+            free(this->m_pLoadThread->m_pTermMutex);
+        }
+        free(this->m_pLoadThread);
+    }
+
+    this->m_pLoadThread = NULL;
+    MemoryManager__Free(this->m_ppSoundList);
+    this->m_ppSoundList = NULL;
+    
+    // Is this not memmapped?
+    if (group_info[this->m_groupId].fd < 0) {
+        free(this->m_pData);
+    } else {
+        munmap(group_info[this->m_groupId].memory_map, group_info[this->m_groupId].memory_map_sz);
+    }
+
+    group_info[this->m_groupId] = (AudioGroupInfo){
+        .fd = -1,
+        .memory_map = NULL,
+        .memory_map_sz = 0
+    };
+
+    return this;
+}
+
 ABI_ATTR void RunnerLoadGame_reimpl()
 {
     //TODO:: Significantly improve this logic, e.g. with config files etc
@@ -311,15 +486,18 @@ void patch_specifics(so_module *mod)
 
     // Apply function hooks
     DynLibHooks hooks[] = {
+        {"_ZN13MemoryManager10DumpMemoryEP7__sFILE", (uintptr_t)&noop, 1},                                   // Skip memory dump
+        {"_Z17alBufferDebugNamejPKc", (uintptr_t)&noop, 1},                                                  // Skip OpenAL debug code
+        // {"_ZN8TConsole6OutputEPKcz", (uintptr_t)&_dbg_csol_print, 1},                                     // Hook debug output procedure
+        {"_ZN12DummyConsole6OutputEPKcz", (uintptr_t)&_dbg_csol_print, 1},                                   // Hook debug output procedure
+        {"_Z7YYErrorPKcz", (uintptr_t)&YYError, 1},                                                          // Hook error messages
+        {"_Z23YoYo_GetPlatform_DoWorkv", (uintptr_t)&force_platform_type, 1},                                // Fake platform type
+        {"_Z20GET_YoYo_GetPlatformP9CInstanceiP6RValue", (uintptr_t)&force_platform_type_gms2, 1},           // Fake platform type
+        {"_Z14RunnerLoadGamev", (uintptr_t)&RunnerLoadGame_reimpl, 1},                                       // Custom game.droid loading mechanism
         {"_Z27Extension_Call_DLL_FunctioniiP6RValueS0_", (uintptr_t)&Extension_Call_DLL_Function_reimpl, 1}, // Custom extension logic
-        {"_ZN13MemoryManager10DumpMemoryEP7__sFILE", (uintptr_t)&noop, 1},                         // Skip memory dump
-        {"_Z17alBufferDebugNamejPKc", (uintptr_t)&noop, 1},                                        // Skip OpenAL debug code
-        // {"_ZN8TConsole6OutputEPKcz", (uintptr_t)&_dbg_csol_print, 1},                           // Hook debug output procedure
-        {"_ZN12DummyConsole6OutputEPKcz", (uintptr_t)&_dbg_csol_print, 1},                         // Hook debug output procedure
-        {"_Z7YYErrorPKcz", (uintptr_t)&YYError, 1},                                                // Hook error messages
-        {"_Z23YoYo_GetPlatform_DoWorkv", (uintptr_t)&force_platform_type, 1},                      // Fake platform type
-        {"_Z20GET_YoYo_GetPlatformP9CInstanceiP6RValue", (uintptr_t)&force_platform_type_gms2, 1}, // Fake platform type
-        {"_Z14RunnerLoadGamev", (uintptr_t)&RunnerLoadGame_reimpl, 1},                             // Custom game.droid loading mechanism
+        {"_ZN14CAudioGroupMan9LoadGroupEi", (uintptr_t)&CAudioGroupMan__LoadGroup_reimpl, 1},                // Custom CAudioGroup loading (external and possibly mmapped)
+        {"_ZN11CAudioGroupD2Ev", (uintptr_t)&CAudioGroup_dtor, 1},                                           // Custom CAudioGroup dtor
+        {"_ZN11CAudioGroupD1Ev", (uintptr_t)&CAudioGroup_dtor, 1},                                           // Alt Custom CAudioGroup dtor
         {NULL}
     };
 
