@@ -476,7 +476,7 @@ ABI_ATTR void RunnerLoadGame_reimpl()
 
 char Extension_Call_DLL_Function_reimpl(int id, int argc, RValue *args, RValue *ret)
 {
-    WARN_STUB;
+    // WARN_STUB;
     return 0;
 }
 
