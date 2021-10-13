@@ -18,7 +18,7 @@ typedef struct zipfail {
 
 ABI_ATTR zipfail *AAssetManager_open_impl(void *mgr, const char *filename, int mode)
 {
-    zip_t *apk = get_current_apk();
+    zip_t *apk = zip_get_current_apk();
     zip_int64_t idx = zip_name_locate(apk, filename, ZIP_FL_NOCASE);
 
     if (idx < 0)
@@ -37,7 +37,7 @@ ABI_ATTR zipfail *AAssetManager_open_impl(void *mgr, const char *filename, int m
 
 ABI_ATTR off_t AAsset_getLength_impl(zipfail *f)
 {
-    zip_t *apk = get_current_apk();
+    zip_t *apk = zip_get_current_apk();
 
     zip_stat_t stt = {};
     zip_stat_init(&stt);

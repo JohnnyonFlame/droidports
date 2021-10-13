@@ -318,7 +318,7 @@ ABI_ATTR int CAudioGroupMan__LoadGroup_reimpl(CAudioGroupMan *this, int groupId)
     if (!io_buffer_from_file(filename, &fd, &mem, &mem_sz, IO_HINT_MMAP)) {
         // That failed, attempt to load from the apk
         snprintf(filename, sizeof(filename), "assets/audiogroup%d.dat", groupId);
-        if (!inflate_buf(get_current_apk(), filename, &mem_sz, &mem)) {
+        if (!zip_inflate_buf(zip_get_current_apk(), filename, &mem_sz, &mem)) {
             fatal_error("Unable to open Audio Group %d!\n", groupId);
             return 0;
         }
@@ -430,7 +430,7 @@ ABI_ATTR void RunnerLoadGame_reimpl()
     }
 
     // Now attempt from the APK
-    if (inflate_buf(get_current_apk(), "assets/game.droid", &sz, g_pGameFileBuffer)) {
+    if (zip_inflate_buf(zip_get_current_apk(), "assets/game.droid", &sz, g_pGameFileBuffer)) {
         *g_GameFileLength = sz;
         return;
     }
@@ -512,7 +512,7 @@ static void createSplashTexture(zip_t *apk, GLuint *tex, int *w_tex, int *h_tex,
     size_t inflated_bytes = 0;
     uint32_t *pixels = NULL;
 
-    if (inflate_buf(apk, "assets/splash.png", &inflated_bytes, &inflated_ptr)) {
+    if (zip_inflate_buf(apk, "assets/splash.png", &inflated_bytes, &inflated_ptr)) {
         lodepng_decode32((unsigned char **)&pixels, w, h, inflated_ptr, inflated_bytes);
         free(inflated_ptr);
     } else {
@@ -639,7 +639,7 @@ void invoke_app(zip_t *apk, const char *apk_path)
 		MK_JSTRING(strdup("com.johnny.loader")),
 	};
 
-    set_current_apk(apk);
+    zip_set_current_apk(apk);
     RunnerJNILib_Startup(env, NULL, &args[0], &args[1], &args[2], 4, 0);
     glViewport(0, 0, w, h);
 

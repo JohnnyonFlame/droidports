@@ -7,17 +7,17 @@
 #include "zip_util.h"
 
 static zip_t *current_apk = NULL; 
-zip_t *get_current_apk()
+zip_t *zip_get_current_apk()
 {
     return current_apk;
 }
 
-void set_current_apk(zip_t *apk)
+void zip_set_current_apk(zip_t *apk)
 {
     current_apk = apk;
 }
 
-int inflate_file(zip_t *zip, const char *file, const char *dst)
+int zip_inflate_file(zip_t *zip, const char *file, const char *dst)
 {
     zip_stat_t zip_st;
     if (zip_stat(zip, file, 0, &zip_st) == -1) {
@@ -57,7 +57,7 @@ inflate_file_zip:
     return 0;
 }
 
-int inflate_buf(zip_t *zip, const char *file, size_t *inflated_bytes, void **bytes)
+int zip_inflate_buf(zip_t *zip, const char *file, size_t *inflated_bytes, void **bytes)
 {
     /* Attempt to locate the file */
     /* Get the uncompressed size */
