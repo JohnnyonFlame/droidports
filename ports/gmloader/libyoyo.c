@@ -243,7 +243,7 @@ typedef struct CAudioGroup {
     int m_eLoadState;
     int m_groupId;
     int m_soundCount;
-    int m_soundsAdded;
+    int *m_soundsAdded;
     int m_soundsLoaded;
     int m_loadProgress;
     void * m_pData;
@@ -279,11 +279,11 @@ static ABI_ATTR int (*Audio_WAVs)(uint8_t*, uint32_t, uint8_t*, int) = NULL;
 static ABI_ATTR void (*CThread__start)(CThread *, void *, void *, char *) = NULL;
 static ABI_ATTR void (*Audio_PrepareGroup)(void*) = NULL;
 
-static ABI_ATTR int Audio_Load_cb(void *data)
+static ABI_ATTR int Audio_Load_cb(CAudioGroup *data)
 {
     ENSURE_SYMBOL(libyoyo, Audio_PrepareGroup, "_Z18Audio_PrepareGroupi");
 
-    Audio_PrepareGroup(*(int *)(*(int *)(data + 0xc) + 4));
+    Audio_PrepareGroup(data->m_soundsAdded[1]);
     return 0;
 }
 
