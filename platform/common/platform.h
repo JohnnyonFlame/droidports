@@ -1,6 +1,8 @@
 #ifndef __PLATFORM_H__
 #define __PLATFORM_H__
 
+#include <stdint.h>
+
 // Definitions for ABI attributes
 // Flags bridges and native library functions as the correct ABI, e.g. for
 // compiling with HardFP toolchains and drivers, since armv7a android libraries are
@@ -49,5 +51,8 @@
 #endif
 
 #define MIN_FREE_MEM (48 * 1024 * 1024)
+
+typedef int bionic_off_t; // 32bit off_t type (BIONIC quirk - see https://cs.android.com/android/platform/superproject/+/master:bionic/docs/32-bit-abi.md)
+extern uint64_t get_available_physram();
 
 #endif /* __PLATFORM_H__ */

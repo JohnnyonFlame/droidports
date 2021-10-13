@@ -578,7 +578,7 @@ static void createSplashTexture(zip_t *apk, GLuint *tex, int *w_tex, int *h_tex,
 }
 
 static int prev_room = 0xFFFFFFFF;
-unsigned long long flushWhenFull()
+void flushWhenFull()
 {
     ENSURE_SYMBOL(libyoyo, g_IOFrameCount, "g_IOFrameCount");
     ENSURE_SYMBOL(libyoyo, Current_Room, "Current_Room");
@@ -594,7 +594,7 @@ unsigned long long flushWhenFull()
             return;
     }
 
-    uint64_t mb_avphys = get_avphys_pages() * sysconf(_SC_PAGESIZE);
+    uint64_t mb_avphys = get_available_physram();
     if (mb_avphys < (MIN_FREE_MEM)) {
         RValue ret;
         F_YoYo_DrawTextureFlush(&ret, NULL, NULL, 0, NULL);
