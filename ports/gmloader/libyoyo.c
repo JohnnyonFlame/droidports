@@ -5,14 +5,12 @@
 #include <string.h>
 #include <lodepng.h>
 #include <math.h>
-#include <unistd.h>
-#include <sys/mman.h>
 #include <sys/types.h>
-#include <sys/stat.h>
 
 #include "platform.h"
 #include "so_util.h"
 #include "zip_util.h"
+#include "io_util.h"
 #include "fake_jni.h"
 #include "gles2_bridge.h"
 #include "RunnerJNILib.h"
@@ -271,7 +269,7 @@ typedef struct CThread {
 
 static void **g_pGameFileBuffer = NULL;
 static char **g_pWorkingDirectory = NULL;
-static int *g_GameFileLength = NULL; //android had 32bit off_t???
+static bionic_off_t *g_GameFileLength = NULL; //android had 32bit off_t???
 static int g_fdGameFileBuffer = -1;
 static ABI_ATTR void (*SetWorkingDirectory_ptr)() = NULL;
 static ABI_ATTR void (*Mutex__ctor)(void*, char*) = NULL;
@@ -291,7 +289,7 @@ static ABI_ATTR int Audio_Load_cb(CAudioGroup *data)
 typedef struct AudioGroupInfo {
     int fd;
     void *memory_map;
-    size_t *memory_map_sz; 
+    size_t memory_map_sz; 
 } AudioGroupInfo;
 
 static AudioGroupInfo *group_info = NULL;
@@ -301,7 +299,7 @@ ABI_ATTR int CAudioGroupMan__LoadGroup_reimpl(CAudioGroupMan *this, int groupId)
     ENSURE_SYMBOL(libyoyo, Mutex__ctor, "_ZN5MutexC1EPKc");
     ENSURE_SYMBOL(libyoyo, CThread__start, "_ZN7CThread5StartEPFPvS0_ES0_PcNS_9ePriorityE");
     CAudioGroup *piVar4;
-    char filename[PATH_MAX];
+    char filename[PATH_MAX]; 
     void *mem = NULL;
     size_t mem_sz = 0;
 
@@ -315,24 +313,15 @@ ABI_ATTR int CAudioGroupMan__LoadGroup_reimpl(CAudioGroupMan *this, int groupId)
     }
 
     snprintf(filename, sizeof(filename), "%saudiogroup%d.dat", get_platform_savedir(), groupId);
-    int fd = open(filename, O_RDONLY);
-    if (fd >= 0) {
-        struct stat st;
-        if (fstat(fd, &st) != 0) {
-            fatal_error("Unable to stat '%s'\n", filename);
-            goto audio_close_fd;
-        }
-
-        mem_sz = st.st_size;
-        mem = mmap(NULL, mem_sz, PROT_WRITE, MAP_PRIVATE, fd, NULL);
-    } else {
+    int fd = -1;
+    // Attempt to load from the working directory directly... (and if possibly,  mmaped)
+    if (!io_buffer_from_file(filename, &fd, &mem, &mem_sz, IO_HINT_MMAP)) {
+        // That failed, attempt to load from the apk
         snprintf(filename, sizeof(filename), "assets/audiogroup%d.dat", groupId);
-        ssize_t sz_buf;
-        if (!inflate_buf(get_current_apk(), filename, &sz_buf, &mem)) {
-            fatal_error("Unable to open Audio Group %d!\n", filename);
+        if (!inflate_buf(get_current_apk(), filename, &mem_sz, &mem)) {
+            fatal_error("Unable to open Audio Group %d!\n", groupId);
             return 0;
         }
-        mem_sz = sz_buf;
     }
 
     if (strncmp(mem + 8, "AUDO", 4) != 0) {
@@ -408,6 +397,7 @@ ABI_ATTR CAudioGroup *CAudioGroup_dtor(CAudioGroup *this)
         free(this->m_pData);
     } else {
         munmap(group_info[this->m_groupId].memory_map, group_info[this->m_groupId].memory_map_sz);
+        close(group_info[this->m_groupId].fd);
     }
 
     group_info[this->m_groupId] = (AudioGroupInfo){
@@ -425,53 +415,29 @@ ABI_ATTR void RunnerLoadGame_reimpl()
     ENSURE_SYMBOL(libyoyo, g_pGameFileBuffer, "g_pGameFileBuffer");
     ENSURE_SYMBOL(libyoyo, g_GameFileLength, "g_GameFileLength");
     ENSURE_SYMBOL(libyoyo, g_pWorkingDirectory, "g_pWorkingDirectory");
+    
+    size_t sz;
 
     // Set current working directory
     *g_pWorkingDirectory = strdup(get_platform_savedir());
 
-    // Attempt to load game.droid from the home folder
+    // Attempt to load game.droid from the working directory
     char WADNAME[PATH_MAX] = {};
     snprintf(WADNAME, sizeof(WADNAME), "%s%s", get_platform_savedir(), "game.droid");
-    g_fdGameFileBuffer = open(WADNAME, O_RDONLY);
-    if (g_fdGameFileBuffer < 0) {
-        // If we failed to open the file, try to acquire it from the apk file
-        ssize_t sz;
-        if (!inflate_buf(get_current_apk(), "assets/game.droid", &sz, g_pGameFileBuffer)) {
-            fatal_error("Unable to load WAD! Check your data files.\n");
-            exit(-1);
-        }
-
-        *g_GameFileLength = (int)sz;
+    if (io_buffer_from_file(WADNAME, &g_fdGameFileBuffer, g_pGameFileBuffer, &sz, IO_HINT_MMAP)) {
+        *g_GameFileLength = sz;
         return;
-#if 0
-        warning("No WAD in '%s', attempting to extract...\n", WADNAME);
-        if (!inflate_file(get_current_apk(), "assets/game.droid", WADNAME)) {
-            fatal_error("Unable to load WAD! Check your data files.\n");
-            exit(-1);
-        }
-
-        g_fdGameFileBuffer = open(WADNAME, O_RDONLY);
-        if (g_fdGameFileBuffer < 0) {
-            fatal_error("Unable to load WAD after extraction!.\n");
-            exit(-1);
-        }
-#endif
     }
 
-    // Since we got the file - let's stat it...
-    struct stat filestat;
-    if (fstat(g_fdGameFileBuffer, &filestat) != 0) {
-        fatal_error("Unable to stat WAD \"%s\"!\n", WADNAME);
-        exit(-1);
+    // Now attempt from the APK
+    if (inflate_buf(get_current_apk(), "assets/game.droid", &sz, g_pGameFileBuffer)) {
+        *g_GameFileLength = sz;
+        return;
     }
 
-    // and map it directly to ram as Copy on Write (PROT_WRITE and MAP_PRIVATE)
-    *g_GameFileLength = filestat.st_size;
-    *g_pGameFileBuffer = mmap(NULL, filestat.st_size, PROT_WRITE, MAP_PRIVATE, g_fdGameFileBuffer, 0);
-    if (*g_pGameFileBuffer == MAP_FAILED) {
-        fatal_error("Unable to mmap WAD \"%s\"!\n", WADNAME);
-        exit(-1);
-    }
+    // Failed completely...
+    fatal_error("Unable to open game's WAD file.\n");
+    exit(-1);
 }
 
 char Extension_Call_DLL_Function_reimpl(int id, int argc, RValue *args, RValue *ret)
@@ -543,7 +509,7 @@ void patch_specifics(so_module *mod)
 static void createSplashTexture(zip_t *apk, GLuint *tex, int *w_tex, int *h_tex, int *w, int *h)
 {
     void *inflated_ptr = NULL;
-    ssize_t inflated_bytes = 0;
+    size_t inflated_bytes = 0;
     uint32_t *pixels = NULL;
 
     if (inflate_buf(apk, "assets/splash.png", &inflated_bytes, &inflated_ptr)) {

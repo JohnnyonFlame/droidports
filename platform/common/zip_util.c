@@ -57,7 +57,7 @@ inflate_file_zip:
     return 0;
 }
 
-int inflate_buf(zip_t *zip, const char *file, ssize_t *inflated_bytes, void **bytes)
+int inflate_buf(zip_t *zip, const char *file, size_t *inflated_bytes, void **bytes)
 {
     /* Attempt to locate the file */
     /* Get the uncompressed size */

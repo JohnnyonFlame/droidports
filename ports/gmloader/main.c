@@ -68,7 +68,7 @@ int main(int argc, char *argv[])
 #else
     char *lib = "lib/armeabi-v7a/libyoyo.so";
 #endif
-    ssize_t inflated_bytes = 0;
+    size_t inflated_bytes = 0;
     if (inflate_buf(apk, lib, &inflated_bytes, &inflated_ptr) == 0) {
         fatal_error("Failed to acquire shared library, exiting.\n");
         return -1;
