@@ -5,8 +5,10 @@
 #include <string.h>
 #include <lodepng.h>
 #include <math.h>
+#include <pthread.h>
 #include <sys/types.h>
 
+#include "pthread_bridge.h"
 #include "platform.h"
 #include "so_util.h"
 #include "zip_util.h"
@@ -264,7 +266,7 @@ typedef struct CThread {
     char padding;
     void * m_pFunctionArg;
     void * (* m_pThreadFunc)(void *);
-    struct Mutex * m_pTermMutex;
+    struct BIONIC_Mutex * m_pTermMutex;
 } CThread;
 
 static void **g_pGameFileBuffer = NULL;
@@ -345,7 +347,7 @@ ABI_ATTR int CAudioGroupMan__LoadGroup_reimpl(CAudioGroupMan *this, int groupId)
     if (thr == NULL) {
         grp->m_pLoadThread = thr = malloc(sizeof(CThread));
         *thr = (CThread){
-            .m_pTermMutex = malloc(8)
+            .m_pTermMutex = malloc(sizeof(BIONIC_Mutex))
         };
 
         Mutex__ctor(thr->m_pTermMutex, "TermMutex");

@@ -11,6 +11,7 @@
 #include <pthread.h>
 
 #include "platform.h"
+#include "pthread_bridge.h"
 #include "openal_bridge.h"
 #include "so_util.h"
 
@@ -21,24 +22,12 @@ AL_BRIDGE
 #undef AL_DECL_FWD_NR
 #undef AL_DECL_FWD
 
-// From pthread_bridge.c, since these are structs that will be used in the context of the
-// loaded application, then we need to make sure to used bridged structures!
-extern ABI_ATTR int pthread_mutex_init_bridge(pthread_mutex_t *uid, pthread_mutexattr_t *mutexattr);
-extern ABI_ATTR int pthread_mutex_destroy_bridge(pthread_mutex_t *uid);
-
-// The fake mutex structure used
-typedef struct FakeMutex
-{
-    void *vmt;
-    pthread_mutex_t mtx;
-} FakeMutex;
-
 // The following functions use a bridged ALCcontext structure, since the GM:S runner is accessing opaque structure 
 // mutexes inside this struct.
 typedef struct BRIDGE_ALCcontext {
     ALCcontext *or_ctx;
     char padding[0x54 - sizeof(ALCcontext*)];
-    FakeMutex *mtx;
+    BIONIC_Mutex *mtx;
 } BRIDGE_ALCcontext;
 
 ABI_ATTR static void bridge_alcProcessContext(BRIDGE_ALCcontext *context)
@@ -59,7 +48,7 @@ ABI_ATTR static void bridge_alcDestroyContext(BRIDGE_ALCcontext *context)
         return;
 
     // Wait until mutex is actually destroyed
-    while(pthread_mutex_destroy_bridge(&context->mtx->mtx) == EBUSY);
+    while(pthread_mutex_destroy_bridge(&context->mtx->mutex) == EBUSY);
 
     alcDestroyContext(context->or_ctx);
     free(context->mtx);
@@ -76,7 +65,7 @@ ABI_ATTR static BRIDGE_ALCcontext *bridge_alcCreateContext(ALCdevice *device, co
     BRIDGE_ALCcontext *bctx = calloc(1, sizeof(*bctx));
     bctx->or_ctx = ctx;
     bctx->mtx = calloc(1, sizeof(*bctx->mtx));
-    pthread_mutex_init_bridge(&bctx->mtx->mtx, NULL);
+    pthread_mutex_init_bridge(&bctx->mtx->mutex, NULL);
     return bctx;
 }
 

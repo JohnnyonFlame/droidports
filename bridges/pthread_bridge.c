@@ -6,6 +6,7 @@
 
 #include "platform.h"
 #include "so_util.h"
+#include "pthread_bridge.h"
 
 ABI_ATTR int pthread_key_create_bridge(pthread_key_t *key, void (*destr_function) (void *))
 {
@@ -33,8 +34,10 @@ ABI_ATTR void* pthread_getspecific_bridge(pthread_key_t key)
     return pthread_getspecific(key);
 }
 
-ABI_ATTR int pthread_mutex_init_bridge(pthread_mutex_t **uid, pthread_mutexattr_t **mutexattr)
+ABI_ATTR int pthread_mutex_init_bridge(BIONIC_pthread_mutex_t *_uid, pthread_mutexattr_t **mutexattr)
 {
+    pthread_mutex_t **uid = (pthread_mutex_t**)_uid;
+
     pthread_mutexattr_t *attr = mutexattr ? *mutexattr : NULL; 
     pthread_mutex_t *m = (pthread_mutex_t *)calloc(1, sizeof(pthread_mutex_t));
     if (!m)
@@ -52,8 +55,10 @@ ABI_ATTR int pthread_mutex_init_bridge(pthread_mutex_t **uid, pthread_mutexattr_
     return 0;
 }
 
-ABI_ATTR int pthread_mutex_destroy_bridge(pthread_mutex_t **uid)
+ABI_ATTR int pthread_mutex_destroy_bridge(BIONIC_pthread_mutex_t *_uid)
 {
+    pthread_mutex_t **uid = (pthread_mutex_t**)_uid;
+
     if (uid && *uid && (uintptr_t)*uid > 0x8000)
     {
         pthread_mutex_destroy(*uid);
@@ -63,16 +68,20 @@ ABI_ATTR int pthread_mutex_destroy_bridge(pthread_mutex_t **uid)
     return 0;
 }
 
-ABI_ATTR int pthread_mutex_lock_bridge(pthread_mutex_t **uid)
+ABI_ATTR int pthread_mutex_lock_bridge(BIONIC_pthread_mutex_t *_uid)
 {
-    if (uid < (pthread_mutex_t**)0x1000)
+    pthread_mutex_t **uid = (pthread_mutex_t**)_uid;
+
+    if (uid < (BIONIC_pthread_mutex_t*)0x1000)
         return -1;
     
     return pthread_mutex_lock(*uid);
 }
 
-ABI_ATTR int pthread_mutex_unlock_bridge(pthread_mutex_t **uid)
+ABI_ATTR int pthread_mutex_unlock_bridge(BIONIC_pthread_mutex_t *_uid)
 {
+    pthread_mutex_t **uid = (pthread_mutex_t**)_uid;
+
     int ret = 0;
     if (uid < (pthread_mutex_t**)0x1000)
         return -1;
@@ -136,8 +145,10 @@ ABI_ATTR int pthread_cond_destroy_bridge(pthread_cond_t **cnd)
     return 0;
 }
 
-ABI_ATTR int pthread_cond_wait_bridge(pthread_cond_t **cnd, pthread_mutex_t **mtx)
+ABI_ATTR int pthread_cond_wait_bridge(pthread_cond_t **cnd, BIONIC_pthread_mutex_t *_mtx)
 {
+    pthread_mutex_t **mtx = _mtx;
+    
     if (!*cnd)
     {
         if (pthread_cond_init_bridge(cnd, NULL) < 0)
@@ -146,8 +157,10 @@ ABI_ATTR int pthread_cond_wait_bridge(pthread_cond_t **cnd, pthread_mutex_t **mt
     return pthread_cond_wait(*cnd, *mtx);
 }
 
-ABI_ATTR int pthread_cond_timedwait_bridge(pthread_cond_t **cnd, pthread_mutex_t **mtx, const struct timespec *t)
+ABI_ATTR int pthread_cond_timedwait_bridge(pthread_cond_t **cnd, BIONIC_pthread_mutex_t *_mtx, const struct timespec *t)
 {
+    pthread_mutex_t **mtx = _mtx;
+
     if (!*cnd)
     {
         if (pthread_cond_init_bridge(cnd, NULL) < 0)
