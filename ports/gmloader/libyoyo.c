@@ -269,10 +269,27 @@ typedef struct CThread {
     struct BIONIC_Mutex * m_pTermMutex;
 } CThread;
 
+typedef struct LLVMVars {
+    char *pWad;
+    int	nWadFileLength;
+    int	nGlobalVariables;
+    int	nInstanceVariables;
+    int	nYYCode;
+    struct YYVAR **ppVars;
+    struct YYVAR **ppFuncs;
+    struct YYGMLFuncs *pGMLFuncs;
+    void *pYYStackTrace;
+} LLVMVars;
+
+static LLVMVars **g_pLLVMVars = NULL;
+static void **g_nYYCode = NULL;
+static void **g_ppYYStackTrace = NULL;
 static void **g_pGameFileBuffer = NULL;
 static char **g_pWorkingDirectory = NULL;
+static char *g_fYYC = NULL;
 static bionic_off_t *g_GameFileLength = NULL; //android had 32bit off_t???
 static int g_fdGameFileBuffer = -1;
+ABI_ATTR void (*InitLLVM)(LLVMVars *) = NULL;
 static ABI_ATTR void (*SetWorkingDirectory_ptr)() = NULL;
 static ABI_ATTR void (*Mutex__ctor)(void*, char*) = NULL;
 static ABI_ATTR int (*Audio_WAVs)(uint8_t*, uint32_t, uint8_t*, int) = NULL;
@@ -414,32 +431,50 @@ ABI_ATTR CAudioGroup *CAudioGroup_dtor(CAudioGroup *this)
 ABI_ATTR void RunnerLoadGame_reimpl()
 {
     //TODO:: Significantly improve this logic, e.g. with config files etc
+    ENSURE_SYMBOL(libyoyo, g_pLLVMVars, "g_pLLVMVars");
+    ENSURE_SYMBOL(libyoyo, g_nYYCode, "g_nYYCode");
     ENSURE_SYMBOL(libyoyo, g_pGameFileBuffer, "g_pGameFileBuffer");
     ENSURE_SYMBOL(libyoyo, g_GameFileLength, "g_GameFileLength");
     ENSURE_SYMBOL(libyoyo, g_pWorkingDirectory, "g_pWorkingDirectory");
+    ENSURE_SYMBOL(libyoyo, g_fYYC, "g_fYYC");
+    ENSURE_SYMBOL(libyoyo, InitLLVM, "_Z8InitLLVMP9SLLVMVars");
     
     size_t sz;
 
     // Set current working directory
     *g_pWorkingDirectory = strdup(get_platform_savedir());
+    
+    g_ppYYStackTrace = so_symbol(libyoyo, "g_ppYYStackTrace");
 
-    // Attempt to load game.droid from the working directory
-    char WADNAME[PATH_MAX] = {};
-    snprintf(WADNAME, sizeof(WADNAME), "%s%s", get_platform_savedir(), "game.droid");
-    if (io_buffer_from_file(WADNAME, &g_fdGameFileBuffer, g_pGameFileBuffer, &sz, IO_HINT_MMAP)) {
-        *g_GameFileLength = sz;
-        return;
+    if (*g_fYYC) {
+        *g_pLLVMVars = malloc(sizeof(**g_pLLVMVars));
+        InitLLVM(*g_pLLVMVars);
+        
+        *g_nYYCode = (*g_pLLVMVars)->nYYCode;
+        *g_ppYYStackTrace = (*g_pLLVMVars)->pYYStackTrace;
+        *g_GameFileLength = (*g_pLLVMVars)->nWadFileLength;
+        *g_pGameFileBuffer = (*g_pLLVMVars)->pWad;
     }
 
-    // Now attempt from the APK
-    if (zip_inflate_buf(zip_get_current_apk(), "assets/game.droid", &sz, g_pGameFileBuffer)) {
-        *g_GameFileLength = sz;
-        return;
-    }
+    if (!*g_fYYC || (*g_pLLVMVars)->pWad == NULL) {
+        // Attempt to load game.droid from the working directory
+        char WADNAME[PATH_MAX] = {};
+        snprintf(WADNAME, sizeof(WADNAME), "%s%s", get_platform_savedir(), "game.droid");
+        if (io_buffer_from_file(WADNAME, &g_fdGameFileBuffer, g_pGameFileBuffer, &sz, IO_HINT_MMAP)) {
+            *g_GameFileLength = sz;
+            return;
+        }
 
-    // Failed completely...
-    fatal_error("Unable to open game's WAD file.\n");
-    exit(-1);
+        // Now attempt from the APK
+        if (zip_inflate_buf(zip_get_current_apk(), "assets/game.droid", &sz, g_pGameFileBuffer)) {
+            *g_GameFileLength = sz;
+            return;
+        }
+
+        // Failed completely...
+        fatal_error("Unable to open game's WAD file.\n");
+        exit(-1);
+    }
 }
 
 char Extension_Call_DLL_Function_reimpl(int id, int argc, RValue *args, RValue *ret)
@@ -570,6 +605,23 @@ void flushWhenFull()
     }
 }
 
+static void apply_hacks()
+{
+    //TODO:: Add these back in when config files are worked into the project
+#if 0 
+    routine_t surface_depth_disable = FindFunctionRoutine("surface_depth_disable");
+    if (surface_depth_disable != NULL) {
+        RValue ret;
+        RValue args[1] = {
+            {.kind = VALUE_BOOL, .rvalue.val = 1}
+        };
+
+        surface_depth_disable(&ret, NULL, NULL, 1, &args[0]);
+        warning("HACK:: Disabled surface depth.\n");
+    }
+#endif
+}
+
 //TODO:: APK path, savepath, etc, shouldn't be hardcoded
 void invoke_app(zip_t *apk, const char *apk_path)
 {
@@ -646,6 +698,7 @@ void invoke_app(zip_t *apk, const char *apk_path)
     glViewport(0, 0, w, h);
 
 	// RunnerJNILib_Resume(env, NULL, 1);
+    apply_hacks();
 
     // Start main loop
     int ret = 1;
