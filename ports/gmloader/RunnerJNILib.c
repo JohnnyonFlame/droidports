@@ -137,7 +137,9 @@ static jboolean RunnerJNILib_PlayingMP3()
 
 static jint RunnerJNILib_GetDefaultFrameBuffer()
 {
+    // TODO:: Seems to only be set when in GL1.1 mode, investigate.
     WARN_STUB
+    return -1;
 }
 
 static void RunnerJNILib_ShowMessage(jstring msg)
