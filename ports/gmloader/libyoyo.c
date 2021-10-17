@@ -293,7 +293,8 @@ ABI_ATTR void (*InitLLVM)(LLVMVars *) = NULL;
 static ABI_ATTR void (*SetWorkingDirectory_ptr)() = NULL;
 static ABI_ATTR void (*Mutex__ctor)(void*, char*) = NULL;
 static ABI_ATTR int (*Audio_WAVs)(uint8_t*, uint32_t, uint8_t*, int) = NULL;
-static ABI_ATTR void (*CThread__start)(CThread *, void *, void *, char *) = NULL;
+static ABI_ATTR void (*CThread__start_PcNS)(CThread *, void *, void *, char *) = NULL;
+static ABI_ATTR void (*CThread__start_NS)(CThread *, void *, void *) = NULL;
 static ABI_ATTR void (*Audio_PrepareGroup)(void*) = NULL;
 
 static ABI_ATTR int Audio_Load_cb(CAudioGroup *data)
@@ -316,7 +317,17 @@ ABI_ATTR int CAudioGroupMan__LoadGroup_reimpl(CAudioGroupMan *this, int groupId)
 {
     ENSURE_SYMBOL(libyoyo, Audio_WAVs, "_Z10Audio_WAVsPhjS_i");
     ENSURE_SYMBOL(libyoyo, Mutex__ctor, "_ZN5MutexC1EPKc");
-    ENSURE_SYMBOL(libyoyo, CThread__start, "_ZN7CThread5StartEPFPvS0_ES0_PcNS_9ePriorityE");
+
+    // We might have either of those
+    if (!CThread__start_PcNS && !CThread__start_NS) {
+        CThread__start_PcNS = so_symbol(libyoyo, "_ZN7CThread5StartEPFPvS0_ES0_PcNS_9ePriorityE");
+        CThread__start_NS = so_symbol(libyoyo, "_ZN7CThread5StartEPFPvS0_ES0_NS_9ePriorityE");
+        if (!CThread__start_PcNS && !CThread__start_NS) {
+            fatal_error("Symbol CThread::Start unavailable.\n");
+            exit(-1);
+        }
+    }
+
     CAudioGroup *piVar4;
     char filename[PATH_MAX]; 
     void *mem = NULL;
@@ -370,7 +381,12 @@ ABI_ATTR int CAudioGroupMan__LoadGroup_reimpl(CAudioGroupMan *this, int groupId)
         Mutex__ctor(thr->m_pTermMutex, "TermMutex");
     }
 
-    CThread__start(thr, Audio_Load_cb, grp, "Audio group load thread");
+    // Chose one of the available symbols
+    if (CThread__start_PcNS) 
+        CThread__start_PcNS(thr, Audio_Load_cb, grp, "Audio group load thread");
+    else if (CThread__start_NS) 
+        CThread__start_NS(thr, Audio_Load_cb, grp);
+
     group_info[groupId].fd = fd;
     group_info[groupId].memory_map = mem;
     group_info[groupId].memory_map_sz = mem_sz;
