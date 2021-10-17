@@ -26,6 +26,30 @@ static void RunnerJNILib_OpenURL(jstring url)
     WARN_STUB
 }
 
+static int RunnerJNILib_OsGetInfo()
+{
+    _jstring osinfo_arr[] = {
+        /* "RELEASE", */           MK_JSTRING("v1.0"),
+        /* "MODEL", */             MK_JSTRING("Homebrew"),
+        /* "DEVICE", */            MK_JSTRING("Homebrew"),
+        /* "MANUFACTURER", */      MK_JSTRING("JohnnyonFlame"),
+        /* "CPU_ABI", */           MK_JSTRING("armeabi"),
+        /* "CPU_ABI2", */          MK_JSTRING("armeabi-v7a"),
+        /* "BOOTLOADER", */        MK_JSTRING("U-Boot"),
+        /* "BOARD", */             MK_JSTRING("You tell me"),
+        /* "VERSION", */           MK_JSTRING("v1.0"),
+        /* "REGION", */            MK_JSTRING("Global"),
+        /* "VERSION_NAME", */      MK_JSTRING("v1.0"),
+    };
+
+    ENSURE_SYMBOL(libyoyo, CreateDsMap, "_Z11CreateDsMapiz");
+    int osinfo = RunnerJNILib_CreateVersionDSMap(jni_get_env(), NULL, 0x13,
+        &osinfo_arr[0], &osinfo_arr[1], &osinfo_arr[2], &osinfo_arr[3], &osinfo_arr[4], &osinfo_arr[5],
+        &osinfo_arr[6], &osinfo_arr[7], &osinfo_arr[8], &osinfo_arr[9], &osinfo_arr[10], (jboolean)1);
+    warning(" -- Retuning OsInfo %d. --\n", osinfo);
+    return osinfo;
+}
+
 static jobject RunnerJNILib_CallExtensionFunction1(jstring class, jstring method, jint count, jdoubleArray dblarray, jobjectArray args)
 {
     WARN_STUB

@@ -11,6 +11,7 @@
                       /*  |Class         |Identifier             |Return      |Arg Type Macros  |Arg Count Macro  |Signatures                                                                          */\
                       /*  -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/\
     DECL_STATIC_MANAGED_NR( RunnerJNILib, OpenURL,                void,        F_s,              ARG1,             "(Ljava/lang/jstring;)V")                                                           \
+    DECL_STATIC_MANAGED   ( RunnerJNILib, OsGetInfo,              jobject,     F_v,              ARG0,             "()I")                                                                              \
     DECL_STATIC_MANAGED   ( RunnerJNILib, CallExtensionFunction1, jobject,     F_ssiaa,          ARG5,             "(Ljava/lang/jstring;Ljava/lang/jstring;I[D[Ljava/lang/Object;)Ljava/lang/Object;") \
     DECL_STATIC_MANAGED   ( RunnerJNILib, CallExtensionFunction2, jobject,     F_ssia,           ARG4,             "(Ljava/lang/jstring;Ljava/lang/jstring;I[Ljava/lang/Object;)Ljava/lang/Object;")   \
     DECL_STATIC_MANAGED_NR( RunnerJNILib, ClearGamepads,          void,        F_v,              ARG0,             "()V")                                                                              \
@@ -37,6 +38,8 @@
             /*  |Class                                   |Return       |Argument List Definition                                                                                                                 */\
             /*  -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/              \
     DECL_NATIVE( RunnerJNILib, Startup,                  void,         jstring _apkPath, jstring _saveFilesDir, jstring _packageName, int _sleepMargin, int useAssetManager)                                       \
+    DECL_NATIVE( RunnerJNILib, CreateVersionDSMap,       int,          int sdkint, jstring RELEASE, jstring MODEL, jstring DEVICE, jstring MANUFACTURER, jstring CPU_ABI, jstring CPU_ABI2, jstring BOOTLOADER,    \
+                                                                       jstring BOARD, jstring version, jstring region, jstring versionName, jboolean physicalKeyboardAvailable)                                    \
     DECL_NATIVE( RunnerJNILib, Process,                  int,          int _width, int _height, float _accelX, float _accelY, float _accelZ, int _keypadStatus, int _orientation, float _refreshrate )             \
     DECL_NATIVE( RunnerJNILib, TouchEvent,               void,         int _type, int _index, float _x, float _y)                                                                                                  \
     DECL_NATIVE( RunnerJNILib, RenderSplash,             void,         jstring _apkPath, jstring _splashName, int  _screenWidth, int _screenHeight, int _texWidth, int _texHeight, int _pngWidth, int _pngHeight ) \
