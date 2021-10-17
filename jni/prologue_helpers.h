@@ -21,7 +21,9 @@ void RESOLVER(struct so_module *mod)
     #define hSTRINGIFY(a) #a
     #define STRINGIFY(a, b) hSTRINGIFY(a) "_" hSTRINGIFY(b)
     #define CONCAT(a, b) a ## b
-    #define DECL_NATIVE(cl, funct, ...) *(uintptr_t *)&cl ## _ ##funct = so_symbol(mod, MANGLED_CLASSPATH #funct);
+    #define DECL_NATIVE(cl, funct, ...) \
+        *(uintptr_t *)&cl ## _ ##funct = so_symbol(mod, MANGLED_CLASSPATH #funct); \
+        if (!cl ## _ ##funct) warning("Unable to find method `%s` (aka: '%s') for '%s'.\n", #funct, MANGLED_CLASSPATH #funct, #cl);
     NATIVE_LIB_FUNCS
     #undef DECL_NATIVE
 }
