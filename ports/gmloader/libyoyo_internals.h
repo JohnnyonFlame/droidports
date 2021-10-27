@@ -191,5 +191,7 @@ extern long long *g_GML_DeltaTime;
 extern char *g_fNoAudio;
 
 extern void register_gamepad_functs(fct_add_t);
+extern void register_mouse_functs(fct_add_t);
+extern void register_achievements_functs(fct_add_t);
 
 #endif /* __RUNNER_INTERNALS_H__ */
