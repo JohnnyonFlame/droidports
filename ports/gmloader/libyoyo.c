@@ -551,6 +551,9 @@ void patch_specifics(so_module *mod)
     register_mouse_functs(fct_add);
     hook_symbol(mod, "_Z13IO_Start_Stepv", IO_Start_Step_hook, 1);
 
+    // Rework achievement systems
+    register_achievements_functs(fct_add);
+
     // This function uses unaligned addresses on a ldmia instruction as an optimization
     // work around it with trampolines. If SIGBUSes happen on other address due to ldmia, might
     // be interesting to add them here or implement the hack globally.
