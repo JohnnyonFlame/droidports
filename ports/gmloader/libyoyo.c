@@ -456,10 +456,6 @@ ABI_ATTR void RunnerLoadGame_reimpl()
     ENSURE_SYMBOL(libyoyo, InitLLVM, "_Z8InitLLVMP9SLLVMVars");
     
     size_t sz;
-
-    // Set current working directory
-    *g_pWorkingDirectory = strdup(get_platform_savedir());
-    
     g_ppYYStackTrace = so_symbol(libyoyo, "g_ppYYStackTrace");
 
     if (*g_fYYC) {
@@ -477,12 +473,14 @@ ABI_ATTR void RunnerLoadGame_reimpl()
         char WADNAME[PATH_MAX] = {};
         snprintf(WADNAME, sizeof(WADNAME), "%s%s", get_platform_savedir(), "game.droid");
         if (io_buffer_from_file(WADNAME, &g_fdGameFileBuffer, g_pGameFileBuffer, &sz, IO_HINT_MMAP)) {
+            *g_pWorkingDirectory = strdup(get_platform_savedir());
             *g_GameFileLength = sz;
             return;
         }
 
         // Now attempt from the APK
         if (zip_inflate_buf(zip_get_current_apk(), "assets/game.droid", &sz, g_pGameFileBuffer)) {
+            *g_pWorkingDirectory = strdup("assets/");
             *g_GameFileLength = sz;
             return;
         }
