@@ -95,6 +95,7 @@ ABI_ATTR static ALCdevice* bridge_alcGetContextsDevice(BRIDGE_ALCcontext *contex
     return alcGetContextsDevice(context->or_ctx);
 }
 
+#if 0
 // thread level storage for the current thread context
 __thread BRIDGE_ALCcontext *tlsCurrentALCContext = NULL;
 ABI_ATTR static ALCboolean bridge_alcSetThreadContext(BRIDGE_ALCcontext *context)
@@ -110,6 +111,7 @@ ABI_ATTR static BRIDGE_ALCcontext *bridge_alcGetThreadContext()
 {
     return tlsCurrentALCContext;
 }
+#endif
 
 DynLibFunction symtable_openal[] = {
     #define AL_DECL_FWD(sym, ret, args, vars) {#sym, (uintptr_t)&bridge_##sym},
@@ -125,7 +127,7 @@ DynLibFunction symtable_openal[] = {
     {"alcMakeContextCurrent", (uintptr_t)&bridge_alcMakeContextCurrent},
     {"alcGetCurrentContext", (uintptr_t)&bridge_alcGetCurrentContext},
     {"alcGetContextsDevice", (uintptr_t)&bridge_alcGetContextsDevice},
-    {"alcSetThreadContext", (uintptr_t)&bridge_alcSetThreadContext},
-    {"alcGetThreadContext", (uintptr_t)&bridge_alcGetThreadContext},
+    // {"alcSetThreadContext", (uintptr_t)&bridge_alcSetThreadContext},
+    // {"alcGetThreadContext", (uintptr_t)&bridge_alcGetThreadContext},
     {NULL, (uintptr_t)NULL}
 };
