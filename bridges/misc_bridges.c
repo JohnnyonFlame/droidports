@@ -147,6 +147,8 @@ struct TM
   const char *__tm_zone;	/* Timezone abbreviation.  */
 };
 
+#define MAX_SAFE_YEAR 2037
+#define MIN_SAFE_YEAR 1971
 static const int length_of_year[2] = { 365, 366 };
 /* Some numbers relating to the gregorian cycle */
 static const Year     years_in_gregorian_cycle   = 400;
@@ -158,6 +160,135 @@ static const int julian_days_by_month[2][12] = {
     {0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334},
     {0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335},
 };
+
+/* 28 year Julian calendar cycle */
+#define SOLAR_CYCLE_LENGTH 28
+/* Year cycle from MAX_SAFE_YEAR down. */
+static const int safe_years_high[SOLAR_CYCLE_LENGTH] = {
+    2016, 2017, 2018, 2019,
+    2020, 2021, 2022, 2023,
+    2024, 2025, 2026, 2027,
+    2028, 2029, 2030, 2031,
+    2032, 2033, 2034, 2035,
+    2036, 2037, 2010, 2011,
+    2012, 2013, 2014, 2015
+};
+/* Year cycle from MIN_SAFE_YEAR up */
+static const int safe_years_low[SOLAR_CYCLE_LENGTH] = {
+    1996, 1997, 1998, 1971,
+    1972, 1973, 1974, 1975,
+    1976, 1977, 1978, 1979,
+    1980, 1981, 1982, 1983,
+    1984, 1985, 1986, 1987,
+    1988, 1989, 1990, 1991,
+    1992, 1993, 1994, 1995,
+};
+
+#define TM_to_tm(dst, src)             \
+    *(struct tm*)&dst = (struct tm ){  \
+        .tm_sec   =       src.tm_sec,  \
+        .tm_min   =       src.tm_min,  \
+        .tm_hour  =       src.tm_hour, \
+        .tm_mday  =       src.tm_mday, \
+        .tm_mon   =       src.tm_mon,  \
+        .tm_year  = (Year)src.tm_year, \
+        .tm_wday  =       src.tm_wday, \
+        .tm_yday  =       src.tm_yday, \
+        .tm_isdst =       src.tm_isdst \
+    };
+
+#define is_exception_century(y) (((y) % 100) == 0 && ((y) % 400) == 0)
+
+static Time64_T seconds_between_years(Year left_year, Year right_year) {
+    int increment = (left_year > right_year) ? 1 : -1;
+    Time64_T seconds = 0;
+    int cycles;
+    if( left_year > 2400 ) {
+        cycles = (left_year - 2400) / 400;
+        left_year -= cycles * 400;
+        seconds   += cycles * seconds_in_gregorian_cycle;
+    }
+    else if( left_year < 1600 ) {
+        cycles = (left_year - 1600) / 400;
+        left_year += cycles * 400;
+        seconds   += cycles * seconds_in_gregorian_cycle;
+    }
+    while( left_year != right_year ) {
+        seconds += length_of_year[IS_LEAP(right_year - 1900)] * 60 * 60 * 24;
+        right_year += increment;
+    }
+    return seconds * increment;
+}
+
+static Year cycle_offset(Year year)
+{
+    const Year start_year = 2000;
+    Year year_diff  = year - start_year;
+    Year exceptions;
+
+    if( year > start_year )
+        year_diff--;
+
+    exceptions  = year_diff / 100;
+    exceptions -= year_diff / 400;
+
+    return exceptions * 16;
+}
+
+static int safe_year(const Year year)
+{
+    int safe_year = 0;
+    Year year_cycle;
+
+    if( year >= MIN_SAFE_YEAR && year <= MAX_SAFE_YEAR ) {
+        return (int)year;
+    }
+
+    year_cycle = year + cycle_offset(year);
+
+    /* safe_years_low is off from safe_years_high by 8 years */
+    if( year < MIN_SAFE_YEAR )
+        year_cycle -= 8;
+
+    /* Change non-leap xx00 years to an equivalent */
+    if( is_exception_century(year) )
+        year_cycle += 11;
+
+    /* Also xx01 years, since the previous year will be wrong */
+    if( is_exception_century(year - 1) )
+        year_cycle += 17;
+
+    year_cycle %= SOLAR_CYCLE_LENGTH;
+
+    if( year_cycle < 0 )
+        year_cycle = SOLAR_CYCLE_LENGTH + year_cycle;
+
+    if( year < MIN_SAFE_YEAR )
+        safe_year = safe_years_low[year_cycle];
+    else if( year > MAX_SAFE_YEAR )
+        safe_year = safe_years_high[year_cycle];
+
+    return safe_year;
+}
+
+Time64_T mktime64_impl(const struct TM *input_date)
+{
+    struct tm safe_date;
+    struct TM date;
+    Time64_T time;
+    Year year = input_date->tm_year + 1900;
+    if( MIN_SAFE_YEAR <= year && year <= MAX_SAFE_YEAR ) {
+        TM_to_tm(input_date, safe_date);
+        return (Time64_T)mktime(&safe_date);
+    }
+
+    date = *input_date;
+    date.tm_year = safe_year(year) - 1900;
+    TM_to_tm(date, safe_date);
+    time = (Time64_T)mktime(&safe_date);
+    time += seconds_between_years(year, (Year)(safe_date.tm_year + 1900));
+    return time;
+}
 
 Time64_T timegm64_impl(const struct TM *date) {
     Time64_T days    = 0;
@@ -290,6 +421,7 @@ DynLibFunction symtable_misc[] = {
     {"gmtime", (uintptr_t)&gmtime},
     {"gmtime64", (uintptr_t)&gmtime64_impl},
     {"timegm64", (uintptr_t)&timegm64_impl},
+    {"mktime64", (uintptr_t)&timegm64_impl},
     {"localtime_r", (uintptr_t)&localtime_r},
     {"localtime64", (uintptr_t)&__localtime64},
     {"time", (uintptr_t)&time},
