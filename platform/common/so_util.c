@@ -457,6 +457,7 @@ __attribute__((naked)) void plt0_stub()
 }
 
 int so_resolve(so_module *mod) {
+  int fail = 0;
   for (int i = 0; i < mod->num_reldyn + mod->num_relplt; i++) {
     Elf32_Rel *rel = i < mod->num_reldyn ? &mod->reldyn[i] : &mod->relplt[i - mod->num_reldyn];
     Elf32_Sym *sym = &mod->dynsym[ELF32_R_SYM(rel->r_info)];
@@ -505,7 +506,7 @@ int so_resolve(so_module *mod) {
             }
             else {
               fatal_error("Missing: %s\n", mod->dynstr + sym->st_name);
-              exit(-1);
+              fail = 1;
             }
               
           }
@@ -517,6 +518,9 @@ int so_resolve(so_module *mod) {
       default:
         break;
     }
+
+    if (fail)
+      exit(-1);
   }
 
   // Will look for symbols inside the modules which are included in one of the
