@@ -37,6 +37,8 @@ extern void *__cxa_rethrow;
 extern void *__cxa_free_exception;
 extern void *_ZTVN10__cxxabiv117__class_type_infoE;
 extern void *_ZTVN10__cxxabiv120__si_class_type_infoE;
+extern void *_ZNSt12length_errorD1Ev;
+extern void *_ZTVSt12length_error;
 
 extern void *__stack_chk_fail;
 extern void *__stack_chk_guard;
@@ -326,6 +328,9 @@ DynLibFunction symtable_misc[] = {
     {"srand", (uintptr_t)&srand},
     {"nanosleep", (uintptr_t)&nanosleep},
     {"usleep", (uintptr_t)&usleep},
+
+    {"_ZNSt12length_errorD1Ev", (uintptr_t)&_ZNSt12length_errorD1Ev}, //std::length_error::~length_error()
+    {"_ZTVSt12length_error", (uintptr_t)&_ZTVSt12length_error},
 
     {NULL, (uintptr_t)NULL}
 };
