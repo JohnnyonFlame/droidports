@@ -142,14 +142,24 @@ void hook_arm(so_module *mod, uintptr_t addr, uintptr_t dst) {
   // Allocate and populate trampoline
   uint32_t trampoline[2];
   uintptr_t trampoline_addr = so_alloc_arena(mod, B_RANGE, B_OFFSET(addr), sizeof(trampoline));
-  trampoline[0] = LDR_OFFS(PC, PC, -0x4).raw; // LDR PC, [PC, #-0x4]
-  trampoline[1] = dst;
-  unrestricted_memcpy(trampoline_addr, trampoline, sizeof(trampoline));
+  if (trampoline_addr) {
+    // Safer 1-byte, two step trampoline strategy
+    trampoline[0] = LDR_OFFS(PC, PC, -0x4).raw; // LDR PC, [PC, #-0x4]
+    trampoline[1] = dst;
+    unrestricted_memcpy(trampoline_addr, trampoline, sizeof(trampoline));
 
-  // Hook the function
-  uint32_t hook[1];
-  hook[0] = B(addr, trampoline_addr).raw;
-  unrestricted_memcpy((void *)addr, hook, sizeof(hook));
+    // Hook the function
+    uint32_t hook[1];
+    hook[0] = B(addr, trampoline_addr).raw;
+    unrestricted_memcpy((void *)addr, hook, sizeof(hook));
+  }
+  else {
+    // 2-byte backup strategy
+    uint32_t hook[2];
+    hook[0] = LDR_OFFS(PC, PC, -0x4).raw; // LDR PC, [PC, #-0x4]
+    hook[1] = dst;
+    unrestricted_memcpy((void *)addr, hook, sizeof(hook));
+  }
 }
 
 void hook_address(so_module *mod, uintptr_t addr, uintptr_t dst) {
@@ -236,8 +246,10 @@ int so_load(so_module *mod, const char *filename, uintptr_t load_addr, void *so_
         mod->text_size = mod->phdr[i].p_memsz;
 
         // Use the .text segment padding as a code cave
-        mod->cave_size = prog_size - mod->phdr[i].p_memsz;
+        // Word-align it to make it simpler for instruction arena allocation
+        mod->cave_size = ALIGN_MEM(prog_size - mod->phdr[i].p_memsz, 0x4);
         mod->cave_base = mod->cave_head = prog_data + mod->phdr[i].p_memsz;
+        mod->cave_base = ALIGN_MEM(mod->cave_base, 0x4);
         mod->cave_head = mod->cave_base;
         warning("code cave: %d bytes (@0x%08X).\n", mod->cave_size, mod->cave_base);
 
