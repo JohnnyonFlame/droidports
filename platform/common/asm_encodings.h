@@ -24,8 +24,8 @@ typedef enum registers {
 
 #define B_RANGE ((1 << 24) - 1)
 #define B_OFFSET(x) (x + 8) // branch jumps into addr - 8, so range is biased forward
-#define B(PC, DEST)  ((b_enc){.bits = {.cond = 0b1110, .enc = 0b101, .l = 0, .imm24 = (((intptr_t)DEST-(intptr_t)PC) >> 2) - 2}})
-#define BL(PC, DEST) ((b_enc){.bits = {.cond = 0b1110, .enc = 0b101, .l = 1, .imm24 = (((intptr_t)DEST-(intptr_t)PC) >> 2) - 2}})
+#define B(PC, DEST)  ((b_enc){.bits = {.cond = 0b1110, .enc = 0b101, .l = 0, .imm24 = (((intptr_t)DEST-(intptr_t)PC) / 4) - 2}})
+#define BL(PC, DEST) ((b_enc){.bits = {.cond = 0b1110, .enc = 0b101, .l = 1, .imm24 = (((intptr_t)DEST-(intptr_t)PC) / 4) - 2}})
 typedef struct b_enc {
   union {
     struct __attribute__((__packed__)) {
