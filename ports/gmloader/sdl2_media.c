@@ -8,7 +8,15 @@
 
 #ifndef PLATFORM_VITA
 
-static SDL_GameController *sdl_game_controllers[4] = {};
+typedef struct controller_t {
+    SDL_GameController *controller;
+    int slot;
+} controller_t;
+
+static controller_t sdl_controllers[8] = {
+    [0 ... 7] = {NULL, -1}
+};
+
 static SDL_Window *sdl_win;
 static SDL_GLContext *sdl_ctx;
 
@@ -171,8 +179,36 @@ static int keyboard_set_key(SDL_Keycode key, int state)
     }
 }
 
+static int check_controller_skipped(int deviceIndex)
+{
+    int skip_bitflag = 0;
+    char *skip = getenv("GMLOADER_SKIP_CONTROLLER"); 
+    char *skip_e = NULL;
+
+    if (skip == NULL)
+        return 0;
+    
+    skip_bitflag = strtol(skip, &skip_e, 10);
+    if (*skip_e != '\0') {
+        warning("Invalid GMLOADER_SKIP_CONTROLLER flag.\n");
+        return 0;
+    }
+
+    if (skip_bitflag & (1 << deviceIndex))
+        return 1;
+}
+
+static int get_free_controller_slot()
+{
+    for (int i = 0; i < ARRAY_SIZE(yoyo_gamepads); i++) {
+        if (!yoyo_gamepads[i].is_available) //not connected
+            return i;
+    }
+
+    return -1;
+}
+
 static Uint32 prev_mouse_state = 0;
-static int key_count = 0;
 int update_input()
 {
     ENSURE_SYMBOL(libyoyo, CreateDsMap, "_Z11CreateDsMapiz");
@@ -185,51 +221,80 @@ int update_input()
     ENSURE_SYMBOL(libyoyo, _IO_ButtonDown, "_IO_ButtonDown");
     ENSURE_SYMBOL(libyoyo, _IO_ButtonPressed, "_IO_ButtonPressed");
     ENSURE_SYMBOL(libyoyo, _IO_ButtonReleased, "_IO_ButtonReleased");
-    ENSURE_SYMBOL(libyoyo, g_IOFrameCount, "g_IOFrameCount");
     ENSURE_SYMBOL(libyoyo, g_MousePosX, "g_MousePosX");
     ENSURE_SYMBOL(libyoyo, g_MousePosY, "g_MousePosY");
-
-    // Delay events by a single frame, fixes Death's Gambit
-    if (*g_IOFrameCount < 1)
-        return 1;
 
     memset(_IO_KeyPressed, 0, N_KEYS);
     memset(_IO_KeyReleased, 0, N_KEYS);
 
     *_IO_LastKey = *_IO_CurrentKey;
     // Other events (keyboard, gamepad hotplug, etc)
-    int prev_key_count = key_count;
     SDL_Event ev;
+
+    int any_key_down = 0;
+    int any_key_pressed = 0;
+    int any_key_released = 0;
+
+    // The events are buffered for a single frame, but we want their availability to be known at frame one.
+    // Fixes Death's Gambit
+    for (int i = 0; i < ARRAY_SIZE(yoyo_gamepads); i++) {
+        Gamepad *pad = &yoyo_gamepads[i];
+        if (pad->is_available != pad->was_available) {
+            pad->was_available = pad->is_available;
+            char *ev = pad->is_available ? "gamepad discovered" : "gamepad lost";
+
+            // Async gamepad event
+            int dsMap = CreateDsMap(2, 
+                "event_type", 0, 0, ev, 
+                "pad_index", (double)i, 0);
+            CreateAsynEventWithDSMap(dsMap, 0x4b);
+        }
+    }
+
     while (SDL_PollEvent(&ev)) {
         switch (ev.type) {
         case SDL_CONTROLLERDEVICEADDED:
-            if (ev.cdevice.which >= sizeof(sdl_game_controllers) / sizeof(sdl_game_controllers[0]))
+            if (ev.cdevice.which >= ARRAY_SIZE(sdl_controllers))
                 break;
 
-            yoyo_gamepads[ev.cdevice.which].is_available = 1;
-
             if (SDL_IsGameController(ev.cdevice.which)) {
-                SDL_GameController *controller = SDL_GameControllerOpen(ev.cdevice.which);
-                sdl_game_controllers[ev.cdevice.which] = controller;
+                controller_t *controller = &sdl_controllers[ev.cdevice.which];
+                controller->controller = SDL_GameControllerOpen(ev.cdevice.which);
 
-                // Async gamepad event
-                int dsMap = CreateDsMap(2, "event_type", 0, 0, "gamepad discovered", "pad_index", (double)ev.cdevice.which, 0);
-                CreateAsynEventWithDSMap(dsMap, 0x4b);
+                // We might want to blacklist certain controllers for many reasons...
+                if (!check_controller_skipped(ev.cdevice.which)) {
+                    controller->slot = get_free_controller_slot();
+                    if (controller->slot >= 0) {
+                        yoyo_gamepads[controller->slot].is_available = 1;
+                        warning("Controller '%s' assigned to player %d.\n", 
+                            SDL_GameControllerName(controller->controller), controller->slot);
+                    } else {
+                        warning("Controller '%s' assigned to none (no free slots).\n", 
+                            SDL_GameControllerName(controller->controller));
+                    }
+                }
+                else {
+                    controller->slot = -1;
+                    warning("Controller '%s' assigned to none (due to GMLOADER_SKIP_CONTROLLER).\n", 
+                        SDL_GameControllerName(controller->controller));
+                }
             }
             break;
         case SDL_CONTROLLERDEVICEREMOVED:
-            if (ev.cdevice.which >= sizeof(sdl_game_controllers) / sizeof(sdl_game_controllers[0]))
+            if (ev.cdevice.which >= sizeof(sdl_controllers) / sizeof(sdl_controllers[0]))
                 break;
 
-            yoyo_gamepads[ev.cdevice.which].is_available = 0;
+            controller_t *controller = &sdl_controllers[ev.cdevice.which];
+            if (controller->slot >= 0) {
+                yoyo_gamepads[controller->slot].is_available = 0;
+                warning("Disconnected player %d controller!\n", controller->slot);
+            } else {
+                warning("Disconnected unassigned controller!\n");
+            }
 
-            printf("Disconnected controller %d!\n", ev.cdevice.which);
-            SDL_GameControllerClose(sdl_game_controllers[ev.cdevice.which]);
-            sdl_game_controllers[ev.cdevice.which] = NULL;
-
-            // Async gamepad event
-            int dsMap = CreateDsMap(2, "event_type", 0, 0, "gamepad lost", "pad_index", (double)ev.cdevice.which, 0);
-            CreateAsynEventWithDSMap(dsMap, 0x4b);
+            SDL_GameControllerClose(controller->controller);
+            controller->controller = NULL;
+            controller->slot = -1;
             break;
         case SDL_KEYDOWN:
         case SDL_KEYUP:
@@ -255,39 +320,41 @@ int update_input()
 
     // Gamepad Input Code
     SDL_GameControllerUpdate();
-    for (int i = 0; i < 4; i++) {
-        if (sdl_game_controllers[i] == NULL)
+    for (int i = 0; i < ARRAY_SIZE(sdl_controllers); i++) {
+        controller_t *controller = &sdl_controllers[i];
+        int slot = controller->slot;
+        if (slot < 0 || slot >= ARRAY_SIZE(yoyo_gamepads))
             continue;
 
         uint8_t new_states[16] = {};
         int k = 0;
-        new_states[k++] = SDL_GameControllerGetButton(sdl_game_controllers[i], SDL_CONTROLLER_BUTTON_A);
-        new_states[k++] = SDL_GameControllerGetButton(sdl_game_controllers[i], SDL_CONTROLLER_BUTTON_B);
-        new_states[k++] = SDL_GameControllerGetButton(sdl_game_controllers[i], SDL_CONTROLLER_BUTTON_X);
-        new_states[k++] = SDL_GameControllerGetButton(sdl_game_controllers[i], SDL_CONTROLLER_BUTTON_Y);
-        new_states[k++] = SDL_GameControllerGetButton(sdl_game_controllers[i], SDL_CONTROLLER_BUTTON_LEFTSHOULDER);
-        new_states[k++] = SDL_GameControllerGetButton(sdl_game_controllers[i], SDL_CONTROLLER_BUTTON_RIGHTSHOULDER);
-        new_states[k++] = SDL_GameControllerGetAxis  (sdl_game_controllers[i], SDL_CONTROLLER_AXIS_TRIGGERLEFT) > 8000;
-        new_states[k++] = SDL_GameControllerGetAxis  (sdl_game_controllers[i], SDL_CONTROLLER_AXIS_TRIGGERRIGHT) > 8000;
-        new_states[k++] = SDL_GameControllerGetButton(sdl_game_controllers[i], SDL_CONTROLLER_BUTTON_BACK);
-        new_states[k++] = SDL_GameControllerGetButton(sdl_game_controllers[i], SDL_CONTROLLER_BUTTON_START);
-        new_states[k++] = SDL_GameControllerGetButton(sdl_game_controllers[i], SDL_CONTROLLER_BUTTON_LEFTSTICK);
-        new_states[k++] = SDL_GameControllerGetButton(sdl_game_controllers[i], SDL_CONTROLLER_BUTTON_RIGHTSTICK);
-        new_states[k++] = SDL_GameControllerGetButton(sdl_game_controllers[i], SDL_CONTROLLER_BUTTON_DPAD_UP);
-        new_states[k++] = SDL_GameControllerGetButton(sdl_game_controllers[i], SDL_CONTROLLER_BUTTON_DPAD_DOWN);
-        new_states[k++] = SDL_GameControllerGetButton(sdl_game_controllers[i], SDL_CONTROLLER_BUTTON_DPAD_LEFT);
-        new_states[k++] = SDL_GameControllerGetButton(sdl_game_controllers[i], SDL_CONTROLLER_BUTTON_DPAD_RIGHT);
+        new_states[k++] = SDL_GameControllerGetButton(controller->controller, SDL_CONTROLLER_BUTTON_A);
+        new_states[k++] = SDL_GameControllerGetButton(controller->controller, SDL_CONTROLLER_BUTTON_B);
+        new_states[k++] = SDL_GameControllerGetButton(controller->controller, SDL_CONTROLLER_BUTTON_X);
+        new_states[k++] = SDL_GameControllerGetButton(controller->controller, SDL_CONTROLLER_BUTTON_Y);
+        new_states[k++] = SDL_GameControllerGetButton(controller->controller, SDL_CONTROLLER_BUTTON_LEFTSHOULDER);
+        new_states[k++] = SDL_GameControllerGetButton(controller->controller, SDL_CONTROLLER_BUTTON_RIGHTSHOULDER);
+        new_states[k++] = SDL_GameControllerGetAxis  (controller->controller, SDL_CONTROLLER_AXIS_TRIGGERLEFT) > 8000;
+        new_states[k++] = SDL_GameControllerGetAxis  (controller->controller, SDL_CONTROLLER_AXIS_TRIGGERRIGHT) > 8000;
+        new_states[k++] = SDL_GameControllerGetButton(controller->controller, SDL_CONTROLLER_BUTTON_BACK);
+        new_states[k++] = SDL_GameControllerGetButton(controller->controller, SDL_CONTROLLER_BUTTON_START);
+        new_states[k++] = SDL_GameControllerGetButton(controller->controller, SDL_CONTROLLER_BUTTON_LEFTSTICK);
+        new_states[k++] = SDL_GameControllerGetButton(controller->controller, SDL_CONTROLLER_BUTTON_RIGHTSTICK);
+        new_states[k++] = SDL_GameControllerGetButton(controller->controller, SDL_CONTROLLER_BUTTON_DPAD_UP);
+        new_states[k++] = SDL_GameControllerGetButton(controller->controller, SDL_CONTROLLER_BUTTON_DPAD_DOWN);
+        new_states[k++] = SDL_GameControllerGetButton(controller->controller, SDL_CONTROLLER_BUTTON_DPAD_LEFT);
+        new_states[k++] = SDL_GameControllerGetButton(controller->controller, SDL_CONTROLLER_BUTTON_DPAD_RIGHT);
 
         for (int j = 0; j < 16; j++) {
             // down -> held or up -> cleared
-            yoyo_gamepads[i].buttons[j] = (double)update_button(new_states[j], (int)yoyo_gamepads[i].buttons[j]);
+            yoyo_gamepads[slot].buttons[j] = (double)update_button(new_states[j], (int)yoyo_gamepads[slot].buttons[j]);
         }
 
         k = 0;
-        yoyo_gamepads[i].axis[k++] = ((double)SDL_GameControllerGetAxis(sdl_game_controllers[i], SDL_CONTROLLER_AXIS_LEFTX)) / 32767.f;
-        yoyo_gamepads[i].axis[k++] = ((double)SDL_GameControllerGetAxis(sdl_game_controllers[i], SDL_CONTROLLER_AXIS_LEFTY)) / 32767.f;
-        yoyo_gamepads[i].axis[k++] = ((double)SDL_GameControllerGetAxis(sdl_game_controllers[i], SDL_CONTROLLER_AXIS_RIGHTX)) / 32767.f;
-        yoyo_gamepads[i].axis[k++] = ((double)SDL_GameControllerGetAxis(sdl_game_controllers[i], SDL_CONTROLLER_AXIS_RIGHTY)) / 32767.f;
+        yoyo_gamepads[slot].axis[k++] = ((double)SDL_GameControllerGetAxis(controller->controller, SDL_CONTROLLER_AXIS_LEFTX)) / 32767.f;
+        yoyo_gamepads[slot].axis[k++] = ((double)SDL_GameControllerGetAxis(controller->controller, SDL_CONTROLLER_AXIS_LEFTY)) / 32767.f;
+        yoyo_gamepads[slot].axis[k++] = ((double)SDL_GameControllerGetAxis(controller->controller, SDL_CONTROLLER_AXIS_RIGHTX)) / 32767.f;
+        yoyo_gamepads[slot].axis[k++] = ((double)SDL_GameControllerGetAxis(controller->controller, SDL_CONTROLLER_AXIS_RIGHTY)) / 32767.f;
     }
 
     // Mouse Code

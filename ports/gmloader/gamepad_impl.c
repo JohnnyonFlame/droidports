@@ -8,6 +8,7 @@
 Gamepad yoyo_gamepads[4] = {
     [0 ... 3] = {
         .is_available = 0, 
+        .was_available = 0,
         .buttons = {},
         .deadzone = 0.1f,
         .axis = {0.0f}

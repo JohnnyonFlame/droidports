@@ -59,7 +59,8 @@ typedef enum GamepadButtonState {
 
 #define MAX_GAMEPADS 4
 typedef struct Gamepad {
-	int is_available; 
+	int is_available;
+	int was_available;
 	double buttons[16];
 	double deadzone;
 	double axis[4];
