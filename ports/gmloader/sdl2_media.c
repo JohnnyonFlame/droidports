@@ -22,15 +22,23 @@ static SDL_GLContext *sdl_ctx;
 
 int init_display(int w, int h)
 {
-    uint32_t flags = SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE;
+    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER);
+
+    uint32_t flags = SDL_WINDOW_OPENGL;
     if (w == -1 || h == -1) {
+        SDL_DisplayMode dp;
+        if (SDL_GetDesktopDisplayMode(0, &dp) != 0) {
+            fatal_error("Failed to acquire display mode. %s\n", SDL_GetError());
+            return 0;
+        }
+
+        warning("Setting video mode %dx%d.\n", dp.w, dp.h);
+        w = dp.w;
+        h = dp.h;
         flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;   
     }
 
-    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER | SDL_INIT_AUDIO);
-    SDL_ShowCursor(SDL_DISABLE); //Hide mouse cursor
-    sdl_win = SDL_CreateWindow("test", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, w, h, flags);
-
+    sdl_win = SDL_CreateWindow("GMLoader", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, w, h, flags);
     if (!sdl_win) {
 		fatal_error("Failed to create window. %s\n", SDL_GetError());
 		return 0;
