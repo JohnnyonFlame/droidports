@@ -10,11 +10,12 @@
 
 typedef struct controller_t {
     SDL_GameController *controller;
-    int slot;
+    int which; //instance id
+    int slot;  //player slot
 } controller_t;
 
 static controller_t sdl_controllers[8] = {
-    [0 ... 7] = {NULL, -1}
+    [0 ... 7] = {.controller = NULL, .which = -1, .slot = -1}
 };
 
 static SDL_Window *sdl_win;
@@ -208,6 +209,28 @@ static int check_controller_skipped(int deviceIndex)
 
 static int get_free_controller_slot()
 {
+    for (int i = 0; i < ARRAY_SIZE(sdl_controllers); i++) {
+        if (sdl_controllers[i].controller == NULL) {
+            return i;
+        }
+    }
+
+    return -1;
+}
+
+static int get_which_controller(int which)
+{
+    for (int i = 0; i < ARRAY_SIZE(sdl_controllers); i++) {
+        if (sdl_controllers[i].which == which) {
+            return i;
+        }
+    }
+
+    return -1;
+}
+
+static int get_free_yoyogamepad_slot()
+{
     for (int i = 0; i < ARRAY_SIZE(yoyo_gamepads); i++) {
         if (!yoyo_gamepads[i].is_available) //not connected
             return i;
@@ -262,16 +285,24 @@ int update_input()
     while (SDL_PollEvent(&ev)) {
         switch (ev.type) {
         case SDL_CONTROLLERDEVICEADDED:
-            if (ev.cdevice.which >= ARRAY_SIZE(sdl_controllers))
-                break;
-
+            // For this event, ev.cdevice.which refers to the Active device index.
             if (SDL_IsGameController(ev.cdevice.which)) {
-                controller_t *controller = &sdl_controllers[ev.cdevice.which];
-                controller->controller = SDL_GameControllerOpen(ev.cdevice.which);
+                int slot = get_free_controller_slot();
+                if (slot == -1) {
+                    warning("Controller skipped, too many controllers.\n");
+                    break;
+                }
+
+                controller_t *controller = &sdl_controllers[slot];
+                SDL_GameController * ptr = SDL_GameControllerOpen(ev.cdevice.which);
+                SDL_Joystick* joy = SDL_GameControllerGetJoystick(ptr);
+
+                controller->which = SDL_JoystickInstanceID(joy);
+                controller->controller = ptr;
 
                 // We might want to blacklist certain controllers for many reasons...
                 if (!check_controller_skipped(ev.cdevice.which)) {
-                    controller->slot = get_free_controller_slot();
+                    controller->slot = get_free_yoyogamepad_slot();
                     if (controller->slot >= 0) {
                         yoyo_gamepads[controller->slot].is_available = 1;
                         warning("Controller '%s' assigned to player %d.\n", 
@@ -288,22 +319,26 @@ int update_input()
                 }
             }
             break;
-        case SDL_CONTROLLERDEVICEREMOVED:
-            if (ev.cdevice.which >= sizeof(sdl_controllers) / sizeof(sdl_controllers[0]))
+        case SDL_CONTROLLERDEVICEREMOVED: {
+            // For this event, ev.cdevice.which refers to the Joystick index.
+            int slot = get_which_controller(ev.cdevice.which);
+            if (slot < 0)
                 break;
 
-            controller_t *controller = &sdl_controllers[ev.cdevice.which];
+            controller_t *controller = &sdl_controllers[slot];
             if (controller->slot >= 0) {
                 yoyo_gamepads[controller->slot].is_available = 0;
-                warning("Disconnected player %d controller!\n", controller->slot);
+                warning("Disconnected player %d controller (%d)!\n", controller->slot, slot);
             } else {
-                warning("Disconnected unassigned controller!\n");
+                warning("Disconnected unassigned controller (%d)!\n", slot);
             }
 
             SDL_GameControllerClose(controller->controller);
             controller->controller = NULL;
+            controller->which = -1;
             controller->slot = -1;
             break;
+        }
         case SDL_KEYDOWN:
         case SDL_KEYUP:
             if (ev.key.repeat == 1)
