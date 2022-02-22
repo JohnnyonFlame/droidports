@@ -11,7 +11,6 @@
 #include "os_Build.h"
 
 #include <SDL2/SDL.h>
-#include <SDL2/SDL_image.h>
 
 static struct JNINativeInterface jni_iface;
 static struct JNIInvokeInterface jni_fake_vm;
