@@ -39,12 +39,6 @@ int init_display(int w, int h)
         flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;   
     }
 
-    sdl_win = SDL_CreateWindow("GMLoader", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, w, h, flags);
-    if (!sdl_win) {
-		fatal_error("Failed to create window. %s\n", SDL_GetError());
-		return 0;
-	}
-    
     // SDL2.0 specific code
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
@@ -55,6 +49,12 @@ int init_display(int w, int h)
     SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
     SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
 
+    sdl_win = SDL_CreateWindow("GMLoader", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, w, h, flags);
+    if (!sdl_win) {
+		fatal_error("Failed to create window. %s\n", SDL_GetError());
+		return 0;
+	}
+    
     sdl_ctx = SDL_GL_CreateContext(sdl_win);
 	if (!sdl_ctx) {
 		fatal_error("Failed to create context. %s\n", SDL_GetError());
