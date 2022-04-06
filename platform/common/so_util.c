@@ -187,7 +187,8 @@ int so_load(so_module *mod, const char *filename, uintptr_t load_addr, void *so_
 
   // If compiled with debug, dump the loaded binaries, before changes are made
 #ifdef DEBUG
-  uint32_t crc32_val = crc32(0xDEADBEEF, so_data, sz);
+  uint32_t crc32_val = crc32_func(0xDEADBEEF, so_data, sz);
+  warning("CRC32: %08X...\n", crc32_val);
 
   // Extract filename from possible path
   char *last_bslash = strrchr(filename, '\\');

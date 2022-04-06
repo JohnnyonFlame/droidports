@@ -3,6 +3,6 @@
 
 #include <stdint.h>
 
-uint32_t crc32(uint32_t crc, const void *buf, uint32_t size);
+uint32_t crc32_func(uint32_t crc, const void *buf, uint32_t size);
 
 #endif //__CRC32_H__
