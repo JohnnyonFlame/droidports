@@ -228,17 +228,17 @@ static jobject iface_NewGlobalRef(JNIEnv *env, jobject jobj)
 
 static void iface_DeleteGlobalRef(JNIEnv *env, jobject jglobalRef)
 {
-	WARN_STUB;
+	;
 }
 
 static jobject iface_NewLocalRef(JNIEnv *env, jobject jobj)
 {
-	WARN_STUB;
+	return jobj;
 }
 
 static void iface_DeleteLocalRef(JNIEnv *env, jobject jlocalRef)
 {
-	WARN_STUB;
+	;
 }
 
 static jint iface_EnsureLocalCapacity(JNIEnv *env, jint capacity)
