@@ -13,7 +13,6 @@
 
 #include "platform.h"
 #include "so_util.h"
-#include "gles2.h"
 #include "gles2_bridge.h"
 
 #ifndef PLATFORM_VITA
@@ -65,7 +64,7 @@ ABI_ATTR static int impl__android_log_print(int prio, const char *tag, const cha
     va_list va;
     va_start(va, fmt);
     warning("LOG[%s]: ", tag);
-    vsnprintf(&andlog, 2047, fmt, va);
+    vsnprintf(andlog, 2047, fmt, va);
     warning("%s", andlog);
     va_end(va);
 }
@@ -74,7 +73,7 @@ ABI_ATTR static int impl__android_log_vprint(int prio, const char *tag, const ch
 {
     char andlog[2048] = {};
     warning("LOG[%s]: ", tag);
-    vsnprintf(&andlog, 2047, fmt, va);
+    vsnprintf(andlog, 2047, fmt, va);
     warning("%s", andlog);
 }
 
