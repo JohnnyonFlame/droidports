@@ -35,10 +35,14 @@ extern void *__cxa_allocate_exception;
 extern void *__cxa_throw;
 extern void *__cxa_rethrow;
 extern void *__cxa_free_exception;
+extern void *__cxa_guard_acquire;
+extern void *__cxa_guard_release;
 extern void *_ZTVN10__cxxabiv117__class_type_infoE;
 extern void *_ZTVN10__cxxabiv120__si_class_type_infoE;
 extern void *_ZNSt12length_errorD1Ev;
 extern void *_ZTVSt12length_error;
+extern void *_ZNSt13runtime_errorD1Ev;
+static char *fake__progname = "libyoyo.so";
 
 extern void *__stack_chk_fail;
 extern void *__stack_chk_guard;
@@ -392,6 +396,8 @@ DynLibFunction symtable_misc[] = {
     {"__cxa_throw", (uintptr_t)&__cxa_throw},
     {"__cxa_rethrow", (uintptr_t)&__cxa_rethrow},
     {"__cxa_free_exception", (uintptr_t)&__cxa_free_exception},
+    {"__cxa_guard_acquire", (uintptr_t)&__cxa_guard_acquire},
+    {"__cxa_guard_release", (uintptr_t)&__cxa_guard_release},
     {"_ZTVN10__cxxabiv117__class_type_infoE", (uintptr_t)&_ZTVN10__cxxabiv117__class_type_infoE},
     {"_ZTVN10__cxxabiv120__si_class_type_infoE", (uintptr_t)&_ZTVN10__cxxabiv120__si_class_type_infoE},
 
@@ -463,6 +469,8 @@ DynLibFunction symtable_misc[] = {
 
     {"_ZNSt12length_errorD1Ev", (uintptr_t)&_ZNSt12length_errorD1Ev}, //std::length_error::~length_error()
     {"_ZTVSt12length_error", (uintptr_t)&_ZTVSt12length_error},
+    {"_ZNSt13runtime_errorD1Ev", (uintptr_t)&_ZNSt13runtime_errorD1Ev},
+    {"__progname", (uintptr_t)&fake__progname},
 
     {NULL, (uintptr_t)NULL}
 };
