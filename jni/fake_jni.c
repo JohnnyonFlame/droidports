@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <fcntl.h>
+#include <string.h>
 
 #include "platform.h"
 #include "fake_jni.h"
@@ -351,7 +352,10 @@ static void iface_ReleaseStringChars(JNIEnv *env, jstring jstr, const jchar* cha
 
 static jstring iface_NewStringUTF(JNIEnv *env, const char* bytes)
 {
-	return strdup(bytes);
+	jstring *str = calloc(1, sizeof(*str));
+	*str = &MK_JSTRING(strdup(bytes));
+
+	return str;
 }
 
 static jsize iface_GetStringUTFLength(JNIEnv *env, jstring jstr)
