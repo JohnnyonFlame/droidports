@@ -19,7 +19,7 @@ int unrestricted_memcpy(void *dst, const void *src, size_t len)
 
 uintptr_t block_alloc(int exec, uintptr_t base_addr, size_t sz)
 {
-  int flags = MAP_PRIVATE|MAP_ANONYMOUS;
+  int flags = MAP_PRIVATE|MAP_ANONYMOUS|MAP_POPULATE;
   if ((void*)base_addr != NULL)
     flags |= MAP_FIXED;
   
