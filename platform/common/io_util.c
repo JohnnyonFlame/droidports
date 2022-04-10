@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <stdlib.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
 
@@ -21,7 +22,8 @@ extern int io_buffer_from_file(const char *filename, int *_fd, void **buf, size_
 
     size_t mem_sz = st.st_size;
 
-    if ((hints & IO_HINT_MMAP) == IO_HINT_MMAP) {
+    char *mmap_hint = getenv("GMLOADER_MMAP");
+    if ((!mmap_hint || *mmap_hint == '1') && ((hints & IO_HINT_MMAP) == IO_HINT_MMAP)) {
         // IO_HINT_MMAP:: If possible, memory map this file instead.
         mem = mmap(NULL, mem_sz, PROT_WRITE, MAP_PRIVATE, fd, NULL);
         if (mem == NULL) {
@@ -33,7 +35,7 @@ extern int io_buffer_from_file(const char *filename, int *_fd, void **buf, size_
         *size = mem_sz;
     } else {
         // No hint, just load the file instead.
-        mem = malloc(sizeof(mem_sz));
+        mem = malloc(mem_sz);
         if (mem == NULL) {
             goto io_bfff_fd;
         }
