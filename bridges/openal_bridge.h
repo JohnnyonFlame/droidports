@@ -141,6 +141,15 @@
     AL_DECL_FWD   (alcGetEnumValue,                ALCenum,     (ALCdevice *device, const ALCchar *enumname),                                                                                 (device, enumname)) \
     AL_DECL_FWD   (alcCaptureOpenDevice,           ALCdevice*,  (const ALCchar *devicename, ALCuint frequency, ALCenum format, ALCsizei buffersize),                                          (devicename, frequency, format, buffersize)) \
     AL_DECL_FWD   (alcCaptureCloseDevice,          ALCboolean,  (ALCdevice *device),                                                                                                          (device)) \
+    AL_DECL_FWD_NR(alcProcessContext,              void,        (ALCcontext *context),                                                                                                        (context)) \
+    AL_DECL_FWD_NR(alcSuspendContext,              void,        (ALCcontext *context),                                                                                                        (context)) \
+    AL_DECL_FWD_NR(alcDestroyContext,              void,        (ALCcontext *context),                                                                                                        (context)) \
+    AL_DECL_FWD   (alcCreateContext,               ALCcontext*, (ALCdevice *device, const ALCint* attrlist),                                                                                  (device, attrlist)) \
+    AL_DECL_FWD   (alcMakeContextCurrent,          ALCboolean,  (ALCcontext *context),                                                                                                        (context)) \
+    AL_DECL_FWD   (alcGetCurrentContext,           ALCcontext*, (),                                                                                                                           ()) \
+    AL_DECL_FWD   (alcGetContextsDevice,           ALCdevice*,  (ALCcontext *context),                                                                                                        (context)) \
+    AL_DECL_FWD   (alcSetThreadContext,            ALCboolean,  (ALCcontext *context),                                                                                                        (context)) \
+    AL_DECL_FWD   (alcGetThreadContext,            ALCcontext*, (),                                                                                                                           ()) \
     /* AL_DECL_FWD   (alIsEffect,                     ALboolean,   (ALuint effect),                                                                                                              (effect)) */ \
     /* AL_DECL_FWD   (alIsFilter,                     ALboolean,   (ALuint filter),                                                                                                              (filter)) */ \
     /* AL_DECL_FWD   (alIsAuxiliaryEffectSlot,        ALboolean,   (ALuint effectslot),                                                                                                          (effectslot)) */ \
@@ -148,15 +157,5 @@
     /* AL_DECL_FWD   (alcLoopbackOpenDeviceSOFT,      ALCdevice*,  (const ALCchar *deviceName),                                                                                                  (deviceName)) */ \
     /* AL_DECL_FWD   (alcIsRenderFormatSupportedSOFT, ALCboolean,  (ALCdevice *device, ALCsizei freq, ALCenum channels, ALCenum type),                                                           (device, freq, channels, type)) */ \
     /* AL_DECL_FWD   (alcResetDeviceSOFT,             ALCboolean,  (ALCdevice *device, const ALCint *attribs),                                                                                   (device, attribs)) */ \
-    /* The following functions use a bridged ALCcontext structure, since the GM:S runner is accessing opaque structure members inside ALCcontext. */ \
-    /* AL_DECL_FWD_NR(alcProcessContext,              void,        (ALCcontext *context),                                                                                                        (context)) */ \
-    /* AL_DECL_FWD_NR(alcSuspendContext,              void,        (ALCcontext *context),                                                                                                        (context)) */ \
-    /* AL_DECL_FWD_NR(alcDestroyContext,              void,        (ALCcontext *context),                                                                                                        (context)) */ \
-    /* AL_DECL_FWD   (alcCreateContext,               ALCcontext*, (ALCdevice *device, const ALCint* attrlist),                                                                                  (device, attrlist)) */ \
-    /* AL_DECL_FWD   (alcMakeContextCurrent,          ALCboolean,  (ALCcontext *context),                                                                                                        (context)) */ \
-    /* AL_DECL_FWD   (alcGetCurrentContext,           ALCcontext*, (),                                                                                                                           ()) */ \
-    /* AL_DECL_FWD   (alcGetContextsDevice,           ALCdevice*,  (ALCcontext *context),                                                                                                        (context)) */ \
-    /* AL_DECL_FWD   (alcSetThreadContext,            ALCboolean,  (ALCcontext *context),                                                                                                        (context)) */ \
-    /* AL_DECL_FWD   (alcGetThreadContext,            ALCcontext*, (),                                                                                                                           ()) */
 
 #endif /* __OPENAL_BRIDGE_H__ */
