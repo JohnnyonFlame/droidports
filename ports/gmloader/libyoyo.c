@@ -499,14 +499,16 @@ void patch_specifics(so_module *mod)
     // Apply function hooks
     DynLibHooks hooks[] = {
         {"_ZN13MemoryManager10DumpMemoryEP7__sFILE", (uintptr_t)&noop, 1},                                   // Skip memory dump
+        {"_ZN13MemoryManager10DumpMemoryEPvS0_", (uintptr_t)&noop, 1},                                       // Skip memory dump
         {"_Z17alBufferDebugNamejPKc", (uintptr_t)&noop, 1},                                                  // Skip OpenAL debug code
         // {"_ZN8TConsole6OutputEPKcz", (uintptr_t)&_dbg_csol_print, 1},                                     // Hook debug output procedure
         {"_ZN12DummyConsole6OutputEPKcz", (uintptr_t)&_dbg_csol_print, 1},                                   // Hook debug output procedure
         {"_Z7YYErrorPKcz", (uintptr_t)&YYError, 1},                                                          // Hook error messages
         {"_Z23YoYo_GetPlatform_DoWorkv", (uintptr_t)&force_platform_type, 1},                                // Fake platform type
         {"_Z20GET_YoYo_GetPlatformP9CInstanceiP6RValue", (uintptr_t)&force_platform_type_gms2, 1},           // Fake platform type
-        {"_Z14RunnerLoadGamev", (uintptr_t)&RunnerLoadGame_reimpl, 1},                                       // Custom game.droid loading mechanism
         {"_Z27Extension_Call_DLL_FunctioniiP6RValueS0_", (uintptr_t)&Extension_Call_DLL_Function_reimpl, 1}, // Custom extension logic
+        // Memory Optimization hacks
+        {"_Z14RunnerLoadGamev", (uintptr_t)&RunnerLoadGame_reimpl, 1},                                       // Custom game.droid loading mechanism
         {"_ZN14CAudioGroupMan9LoadGroupEi", (uintptr_t)&CAudioGroupMan__LoadGroup_reimpl, 1},                // Custom CAudioGroup loading (external and possibly mmapped)
         {"_ZN11CAudioGroupD2Ev", (uintptr_t)&CAudioGroup_dtor, 1},                                           // Custom CAudioGroup dtor
         {"_ZN11CAudioGroupD1Ev", (uintptr_t)&CAudioGroup_dtor, 1},                                           // Alt Custom CAudioGroup dtor
