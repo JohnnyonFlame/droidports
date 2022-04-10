@@ -49,7 +49,7 @@ ABI_ATTR void gamepad_is_connected(RValue *ret, void *self, void *other, int arg
 
 ABI_ATTR void gamepad_get_description(RValue *ret, void *self, void *other, int argc, RValue *args)
 {
-    Ref *ref = malloc(sizeof(ref));
+    Ref *ref = malloc(sizeof(*ref));
 
     *ref = (Ref){
         .m_refCount = 1,

@@ -47,7 +47,7 @@ __attribute__((unused)) static ABI_ATTR jobjectArray  iface_NewObjectArray(JNIEn
 #define FROM_VARIADIC {  }
 #define JNI_PRIV_TYPE(pretty, type) \
     static ABI_ATTR type ## Array iface_New ## pretty ## Array(JNIEnv *env, jsize size) { \
-		type ## Array ref = calloc(1, sizeof(ref)); \
+		type ## Array ref = calloc(1, sizeof(*ref)); \
 		ref->elements = calloc(size, sizeof(type)); \
 		ref->count = size; \
 		return ref; \
