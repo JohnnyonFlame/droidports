@@ -82,7 +82,6 @@ void hook_address(so_module *mod, uintptr_t addr, uintptr_t dst);
 void hook_symbol(so_module *mod, const char *symbol, uintptr_t dst, int is_optional);
 void hook_symbols(so_module *mod, DynLibHooks *hooks);
 
-void so_flush_caches(so_module *mod);
 int so_load(so_module *mod, const char *filename, uintptr_t load_addr, void *so_data, size_t sz);
 int so_relocate(so_module *mod);
 int so_resolve(so_module *mod);
@@ -95,7 +94,7 @@ int unrestricted_memcpy(void *dst, const void *src, size_t len);
 uintptr_t block_alloc(int exec, uintptr_t base_addr, size_t sz);
 void block_free(uintptr_t block, size_t sz);
 void *block_get_base_address(uintptr_t block);
-void so_flush_caches(so_module *mod);
+void so_flush_caches(so_module *mod, int write);
 
 // Defined on a per-port basis on their specific main.c files
 extern DynLibFunction *so_static_patches[];    // Functions to be replaced in the binary

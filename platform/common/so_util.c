@@ -187,20 +187,18 @@ int so_load(so_module *mod, const char *filename, uintptr_t load_addr, void *so_
 
   // If compiled with debug, dump the loaded binaries, before changes are made
 #ifdef DEBUG
+  warning("Calculating CRC32...\n");
   uint32_t crc32_val = crc32_func(0xDEADBEEF, so_data, sz);
   warning("CRC32: %08X...\n", crc32_val);
 
   // Extract filename from possible path
-  char *last_bslash = strrchr(filename, '\\');
+  char *last_bslash = strrchr(filename, '/');
   char *file_basename = basename(last_bslash ? last_bslash+1: filename);
 
   char fname[2048] = "";
-#ifndef PLATFORM_VITA
   snprintf(fname, sizeof(fname), "%08X-%s", crc32_val, file_basename);
-#else
-  snprintf(fname, sizeof(fname), "ux0:data/%08X-%s", crc32_val, filename);
-#endif
 
+  warning("Dumping %d bytes into %s...\n", sz, fname);
   FILE *f = fopen(fname, "wb+");
   size_t written = 0;
   if (f) {
@@ -210,6 +208,8 @@ int so_load(so_module *mod, const char *filename, uintptr_t load_addr, void *so_
 
   if (written != sz) {
     warning("Failed to dump \"%s\"!, wrote %d out of %d bytes\n", fname, written, sz);
+  } else {
+    warning("Dumped %s.\n", fname);
   }
 #endif
 
@@ -220,6 +220,7 @@ int so_load(so_module *mod, const char *filename, uintptr_t load_addr, void *so_
   mod->shstr = (char *)((uintptr_t)so_data + mod->shdr[mod->ehdr->e_shstrndx].sh_offset);
 
   for (int i = 0; i < mod->ehdr->e_phnum; i++) {
+    warning("loading section %d/%d...\n", i, mod->ehdr->e_phnum);
     if (mod->phdr[i].p_type == PT_LOAD) {
       void *prog_data;
       size_t prog_size;

@@ -5,8 +5,6 @@ A repository for experimenting with elf loading and in-place patching of android
 -----
 This repository contains a lot of incomplete, experimental and untested code, and behavior is not guaranteed to match specifications, specially when it comes to the fake JNI implementation.
 
-PSVita ports are currently under heavy wip, and are known to be non-functional.
-
 Corrections, fixes, issue reports and optimizations are always welcome.
 
 ### Dependencies:

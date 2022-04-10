@@ -7,11 +7,8 @@
 int init_gles2()
 {
     // Attempt first to find hooked versions - if it fails, load normal ones.
-#ifndef PLATFORM_VITA
+    warning("Initializing OpenGL funcs...\n");
     #define GB_DECL_FWD(func, ret, args, vars) func = SDL_GL_GetProcAddress(#func);
-#else
-    #define GB_DECL_FWD(func, ret, args, vars) func = vglGetProcAddress(#func);
-#endif
     #define GB_DECL_FWD_NR GB_DECL_FWD
     #define GB_DECL_FWD_HOOK GB_DECL_FWD
     GLES2_FUNCS

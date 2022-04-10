@@ -16,23 +16,11 @@
 #define ARCH_ARMV6 (defined(__ARM_ARCH_6__) || defined(__ARM_ARCH_6J__) || defined(__ARM_ARCH_6K__) || defined(__ARM_ARCH_6Z__) || defined(__ARM_ARCH_6ZK__))
 
 #ifdef DEBUG
-    #ifndef PLATFORM_VITA
-        #define fatal_error(msg, ...) { fprintf(stderr, "%s:%d: " msg, __FILE__, __LINE__, ##__VA_ARGS__); }
-        #define warning(msg, ...) { fprintf(stderr, msg, ##__VA_ARGS__); }
-        #define WARN_STUB fprintf(stderr, "Warning, stubbed function \"%s\".\n", __FUNCTION__);
-    #else
-        void vgl_file_log(const char *format, ...);
-        #define fatal_error(msg, ...) { vgl_file_log("%s:%d: " msg, __FILE__, __LINE__, ##__VA_ARGS__); }
-        #define warning(msg, ...) { vgl_file_log(msg, ##__VA_ARGS__); }
-        #define WARN_STUB vgl_file_log("Warning, stubbed function \"%s\".\n", __FUNCTION__);
-    #endif
+    #define fatal_error(msg, ...) { fprintf(stderr, "%s:%d: " msg, __FILE__, __LINE__, ##__VA_ARGS__); }
+    #define warning(msg, ...) { fprintf(stderr, msg, ##__VA_ARGS__); }
+    #define WARN_STUB fprintf(stderr, "Warning, stubbed function \"%s\".\n", __FUNCTION__);
 #else
-    #ifndef PLATFORM_VITA
-        #define fatal_error(msg, ...) { fprintf(stderr, "%s:%d: " msg, __FILE__, __LINE__, ##__VA_ARGS__); }
-    #else
-        void vgl_file_log(const char *format, ...);
-        #define fatal_error(msg, ...) { vgl_file_log("%s:%d: " msg, __FILE__, __LINE__, ##__VA_ARGS__); }
-    #endif
+    #define fatal_error(msg, ...) { fprintf(stderr, "%s:%d: " msg, __FILE__, __LINE__, ##__VA_ARGS__); }
     #define warning(msg, ...)
     #define WARN_STUB
 #endif

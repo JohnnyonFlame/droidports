@@ -1,7 +1,7 @@
+#include <stdio.h>
 #include <stdint.h>
 #include <stddef.h>
-#include <SDL2/SDL.h>
-
+#include <string.h>
 #include "platform.h"
 #include "so_util.h"
 #include "gles2.h"

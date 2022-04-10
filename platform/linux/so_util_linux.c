@@ -36,7 +36,7 @@ void* block_get_base_address(uintptr_t block)
   return (void*)block;
 }
 
-void so_flush_caches(so_module *mod) {
+void so_flush_caches(so_module *mod, int write) {
 	__builtin___clear_cache((void*)mod->text_base, (void*)(mod->text_base+mod->text_size));
-	mprotect((void*)mod->text_base, mod->text_size, PROT_EXEC|PROT_READ);
+	mprotect((void*)mod->text_base, mod->text_size, PROT_EXEC|(write ? PROT_WRITE|PROT_READ : PROT_READ));
 }

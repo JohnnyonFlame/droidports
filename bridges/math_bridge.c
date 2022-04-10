@@ -5,26 +5,6 @@
 #include "math_bridge.h"
 #include "so_util.h"
 
-#ifdef PLATFORM_VITA
-//    FB_DECL_FWD(__signbit,   double,        (x),    (double      x))
-//    FB_DECL_FWD(__finite,    double,        (x),    (double      x))
-//    FB_DECL_FWD(__finitef,   float,         (x),    (float       x))
-double __signbit(double x)
-{
-    return __signbitd(x);
-}
-
-double __finite(double x)
-{
-    return finite(x);
-}
-
-float __finitef(float x)
-{
-    return finitef(x);
-}
-#endif
-
 #define FB_DECL_FWD(func, ret, args, vars) ABI_ATTR ret bridge_##func vars { return func args; }
 MATH_BRIDGE_DEFS
 #undef FB_DECL_FWD

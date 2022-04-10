@@ -48,6 +48,8 @@ int main(int argc, char *argv[])
         return -1;
 
     /* Open APK File */
+    warning("Opening %s...\n", apk_path);
+
     int err;
     int fd = open(apk_path, O_RDONLY);
     if (fd < 0) {
@@ -55,6 +57,7 @@ int main(int argc, char *argv[])
         return -1;
     }
 
+    warning("Creating zip handle...\n");
     zip_t *apk = zip_fdopen(fd, ZIP_RDONLY, &err);
     if (apk == NULL) {
         fatal_error("Unable to open apk file '%s': Error %d.", apk_path, err);
@@ -68,12 +71,14 @@ int main(int argc, char *argv[])
 #else
     char *lib = "lib/armeabi-v7a/libyoyo.so";
 #endif
+    warning("Inflating %s...\n", lib);
     size_t inflated_bytes = 0;
     if (zip_inflate_buf(apk, lib, &inflated_bytes, &inflated_ptr) == 0) {
         fatal_error("Failed to acquire shared library, exiting.\n");
         return -1;
     }
 
+    warning("Loading runner elf %s (%p, %d bytes)...\n", lib, inflated_ptr, inflated_bytes);
     so_module runner = {};
     int ret = so_load(&runner, lib, address, inflated_ptr, inflated_bytes);
     if (ret != 0) {
@@ -82,15 +87,19 @@ int main(int argc, char *argv[])
     }
 
     // Perform module initialization
+    warning("Perform module initialization...\n", lib);
     so_relocate(&runner);
     so_resolve(&runner);
+    so_flush_caches(&runner, 1);
     so_initialize(&runner);
 
     // Apply port specific patches
+    warning("Applying port specific patches...\n", lib);
     patch_specifics(&runner);
 
     // Point of no return - set rx and flush caches
-    so_flush_caches(&runner);
+    warning("Flushing cache...\n", lib);
+    so_flush_caches(&runner, 0);
 
     /* Jump into the application */
     invoke_app(apk, apk_path);

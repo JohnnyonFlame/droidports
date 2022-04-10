@@ -7,6 +7,7 @@
 #include <math.h>
 #include <pthread.h>
 #include <sys/types.h>
+#include <unistd.h>
 
 #include "pthread_bridge.h"
 #include "platform.h"
@@ -14,11 +15,11 @@
 #include "zip_util.h"
 #include "io_util.h"
 #include "fake_jni.h"
-#include "gles2_bridge.h"
 #include "RunnerJNILib.h"
 #include "libyoyo_internals.h"
 #include "libyoyo.h"
 #include "media.h"
+#include "gles2.h"
 
 so_module *libyoyo = NULL;
 
@@ -85,8 +86,6 @@ static char *fake_functs[] = {
 static char platform_savedir[PATH_MAX] = "";
 void setup_platform_savedir(const char *gamename)
 {
-    //TODO:: Update psvita sdk and use the newlib mkdir.
-#ifndef PLATFORM_VITA
     // For linux targets
 	snprintf(platform_savedir, sizeof(platform_savedir), "%s/.config/%s/", getenv("HOME"), gamename);
 	warning("Saving to folder %s.\n", platform_savedir);
@@ -98,11 +97,6 @@ void setup_platform_savedir(const char *gamename)
         fatal_error("Failed to create folder \"%s\".", platform_savedir);
         exit(-1);
     }
-#else
-    // For PS-vita target
-    snprintf(platform_savedir, sizeof(platform_savedir), "ux0:data/%s/", gamename);
-	warning("Saving to folder %s.\n", platform_savedir);
-#endif
 }
 
 const char *get_platform_savedir()
@@ -243,7 +237,7 @@ typedef struct CAudioGroup {
     int m_eLoadState;
     int m_groupId;
     int m_soundCount;
-    int *m_soundsAdded;
+    int **m_soundsAdded;
     int m_soundsLoaded;
     int m_loadProgress;
     void * m_pData;
@@ -409,6 +403,7 @@ audio_close_fd:
 extern void _ZdlPv(void *); //operator.delete
 static ABI_ATTR (*Mutex__dtor)(void *) = NULL;
 static ABI_ATTR (*MemoryManager__Free)(void *) = NULL;
+
 ABI_ATTR CAudioGroup *CAudioGroup_dtor(CAudioGroup *this)
 {
     // Since we have custom allocations, this dtor needs to be reimplemented...
@@ -600,6 +595,8 @@ static void createSplashTexture(zip_t *apk, GLuint *tex, int *w_tex, int *h_tex,
 static int prev_room = 0xFFFFFFFF;
 void flushWhenFull()
 {
+    // Not necessary anymore
+#if 0
     ENSURE_SYMBOL(libyoyo, g_IOFrameCount, "g_IOFrameCount");
     ENSURE_SYMBOL(libyoyo, Current_Room, "Current_Room");
 
@@ -620,6 +617,7 @@ void flushWhenFull()
         F_YoYo_DrawTextureFlush(&ret, NULL, NULL, 0, NULL);
         glFlush();
     }
+#endif
 }
 
 static void apply_hacks()
@@ -673,7 +671,7 @@ void invoke_app(zip_t *apk, const char *apk_path)
 
     int w, h;
     get_display_size(&w, &h);
-    
+
     // Load splash screen background texture
     GLuint tex;
     int splash_w, splash_h, splash_tex_w, splash_tex_h;

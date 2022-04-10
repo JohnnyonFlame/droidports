@@ -6,8 +6,6 @@
 #include "libyoyo_internals.h"
 #include "libyoyo.h"
 
-#ifndef PLATFORM_VITA
-
 typedef struct controller_t {
     SDL_GameController *controller;
     int which; //instance id
@@ -344,7 +342,8 @@ int update_input()
             if (ev.key.repeat == 1)
                 break;
 
-            key_count -= 1 - (ev.key.state * 2);
+            if (ev.key.state == SDL_PRESSED) any_key_pressed = 1;
+            if (ev.key.state == SDL_RELEASED) any_key_released = 1;
             keyboard_set_key(ev.key.keysym.sym, ev.key.state);
             break;
         case SDL_QUIT:
@@ -353,9 +352,16 @@ int update_input()
         }
     }
 
-    _IO_KeyDown[vk_anykey] = key_count > 0;
-    _IO_KeyPressed[vk_anykey] = (key_count > 0) && (prev_key_count == 0);
-    _IO_KeyReleased[vk_anykey] = (key_count == 0) && (prev_key_count > 0);
+    for (int i = 2; i < N_KEYS; i++) {
+        if (_IO_KeyDown[i]) {
+            any_key_down = 1;
+            break;
+        }
+    }
+
+    _IO_KeyDown[vk_anykey] = any_key_down;
+    _IO_KeyPressed[vk_anykey] = any_key_pressed;
+    _IO_KeyReleased[vk_anykey] = any_key_released;
 
     _IO_KeyDown[vk_nokey] = !_IO_KeyDown[vk_anykey];
     _IO_KeyPressed[vk_nokey] = !_IO_KeyPressed[vk_anykey];
@@ -388,7 +394,7 @@ int update_input()
         new_states[k++] = SDL_GameControllerGetButton(controller->controller, SDL_CONTROLLER_BUTTON_DPAD_LEFT);
         new_states[k++] = SDL_GameControllerGetButton(controller->controller, SDL_CONTROLLER_BUTTON_DPAD_RIGHT);
 
-        for (int j = 0; j < 16; j++) {
+        for (int j = 0; j < ARRAY_SIZE(yoyo_gamepads[slot].buttons); j++) {
             // down -> held or up -> cleared
             yoyo_gamepads[slot].buttons[j] = (double)update_button(new_states[j], (int)yoyo_gamepads[slot].buttons[j]);
         }
@@ -424,5 +430,3 @@ int update_input()
 
     return 1;
 }
-
-#endif

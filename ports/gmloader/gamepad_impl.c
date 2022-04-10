@@ -1,5 +1,4 @@
 #include <math.h>
-#include <SDL2/SDL.h> 
 #include "platform.h"
 #include "so_util.h"
 #include "libyoyo_internals.h"

@@ -15,11 +15,8 @@
 #include "so_util.h"
 #include "gles2_bridge.h"
 
-#ifndef PLATFORM_VITA
 extern void *__gnu_Unwind_Find_exidx;
-#else
-void *__gnu_Unwind_Find_exidx(void *pc, int *pcount) { return 0; }
-#endif
+
 extern void *_ZdaPv;
 extern void *_ZdlPv;
 extern void *_Znaj;
@@ -112,12 +109,6 @@ ABI_ATTR static void *dlopen_fake(const char *filename, int flag)
 
 #ifndef __time64_t
 typedef int64_t __time64_t;
-#endif
-
-#ifdef PLATFORM_VITA
-#ifndef __time_t
-typedef int32_t __time_t;
-#endif
 #endif
 
 struct tm *__localtime64 (const __time64_t *time)
@@ -333,26 +324,6 @@ Time64_T timegm64_impl(const struct TM *date) {
     return(seconds);
 }
 
-#ifdef PLATFORM_VITA
-int clock_gettime_impl(clockid_t _unused, struct timespec *tp)
-{
-    struct timeval tv;
-    int ret = gettimeofday(&tv, NULL);
-    if (ret == 0)
-        TIMEVAL_TO_TIMESPEC(&tv, tp);
-
-    return ret;
-}
-
-int nanosleep(const struct timespec *req, struct timespec *rem) {
-  // no way to implement this as far as I can tell
-  rem->tv_sec = 0;
-  rem->tv_nsec = 0;
-  const uint32_t usec = req->tv_sec * 1000000 + req->tv_nsec / 1000;
-  return sceKernelDelayThreadCB(usec);
-}
-#endif
-
 int usleep(long usec)
 {
     struct timespec ts = {
@@ -400,11 +371,7 @@ DynLibFunction symtable_misc[] = {
     {"_ZTVN10__cxxabiv117__class_type_infoE", (uintptr_t)&_ZTVN10__cxxabiv117__class_type_infoE},
     {"_ZTVN10__cxxabiv120__si_class_type_infoE", (uintptr_t)&_ZTVN10__cxxabiv120__si_class_type_infoE},
 
-#ifdef PLATFORM_VITA
-    {"__errno", (uintptr_t)&__errno},
-#else
     {"__errno", (uintptr_t)&__errno_location},
-#endif
     {"__stack_chk_fail", (uintptr_t)&__stack_chk_fail},
     {"__stack_chk_guard", (uintptr_t)&__stack_chk_guard_fake},
 

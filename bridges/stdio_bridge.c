@@ -225,12 +225,10 @@ ABI_ATTR int _hybris_hook_scandirat(int fd, const char *dir,
                 return -1;
             }
 
-#ifndef PLATFORM_VITA
             filter_r->d_ino = namelist_r[i]->d_ino;
             filter_r->d_off = namelist_r[i]->d_off;
             filter_r->d_reclen = namelist_r[i]->d_reclen;
             filter_r->d_type = namelist_r[i]->d_type;
-#endif
 
             strcpy(filter_r->d_name, namelist_r[i]->d_name);
             filter_r->d_name[sizeof(namelist_r[i]->d_name) - 1] = '\0';
@@ -268,6 +266,7 @@ DynLibFunction symtable_stdio[] = {
     STDIO_HOOKS
     #undef STDIO_DECL
     {"__sF", (uintptr_t)&__sF_fake},
+    {"bsearch", (uintptr_t)&bsearch},
     {"fopen", (uintptr_t)&bridge_fopen},
     {"freopen", (uintptr_t)&bridge_freopen},
     {"fclose", (uintptr_t)&bridge_fclose},

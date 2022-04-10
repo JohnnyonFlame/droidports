@@ -660,49 +660,7 @@
     GB_DECL_FWD_NR  (glFramebufferFetchBarrierQCOM,                    void,           (), (void)) \
     GB_DECL_FWD_NR  (glTextureFoveationParametersQCOM,                 void,           (texture, layer, focalPoint, focalX, focalY, gainX, gainY, foveaArea), (GLuint texture, GLuint layer, GLuint focalPoint, GLfloat focalX, GLfloat focalY, GLfloat gainX, GLfloat gainY, GLfloat foveaArea)) \
     GB_DECL_FWD_NR  (glStartTilingQCOM,                                void,           (x, y, width, height, preserveMask), (GLuint x, GLuint y, GLuint width, GLuint height, GLbitfield preserveMask)) \
-    GB_DECL_FWD_NR  (glEndTilingQCOM,                                  void,           (preserveMask), (GLbitfield preserveMask)) \
-    /* VitaGL extensions */ \
-    GB_DECL_FWD_NR  (vglColorPointer,                                  void,           (size, type, stride, count, pointer),                                                       (GLint size, GLenum type, GLsizei stride, GLuint count, const GLvoid *pointer)) \
-    GB_DECL_FWD_NR  (vglColorPointerMapped,                            void,           (type, pointer),                                                                            (GLenum type, const GLvoid *pointer)) \
-    GB_DECL_FWD_NR  (vglDrawObjects,                                   void,           (mode, count, implicit_wvp),                                                                (GLenum mode, GLsizei count, GLboolean implicit_wvp)) \
-    GB_DECL_FWD_NR  (vglIndexPointer,                                  void,           (type, stride, count, pointer),                                                             (GLenum type, GLsizei stride, GLuint count, const GLvoid *pointer)) \
-    GB_DECL_FWD_NR  (vglIndexPointerMapped,                            void,           (pointer),                                                                                  (const GLvoid *pointer)) \
-    GB_DECL_FWD_NR  (vglTexCoordPointer,                               void,           (size, type, stride, count, pointer),                                                       (GLint size, GLenum type, GLsizei stride, GLuint count, const GLvoid *pointer)) \
-    GB_DECL_FWD_NR  (vglTexCoordPointerMapped,                         void,           (pointer),                                                                                  (const GLvoid *pointer)) \
-    GB_DECL_FWD_NR  (vglVertexPointer,                                 void,           (size, type, stride, count, pointer),                                                       (GLint size, GLenum type, GLsizei stride, GLuint count, const GLvoid *pointer)) \
-    GB_DECL_FWD_NR  (vglVertexPointerMapped,                           void,           (pointer),                                                                                  (const GLvoid *pointer)) \
-    GB_DECL_FWD_NR  (vglBindAttribLocation,                            void,           (prog, index, name, num, type),                                                             (GLuint prog, GLuint index, const GLchar *name, const GLuint num, const GLenum type)) \
-    GB_DECL_FWD     (vglBindPackedAttribLocation,                      GLint,          (prog, name, num, type, offset, stride),                                                    (GLuint prog, const GLchar *name, const GLuint num, const GLenum type, GLuint offset, GLint stride)) \
-    GB_DECL_FWD_NR  (vglVertexAttribPointer,                           void,           (index, size, type, normalized, stride, count, pointer),                                    (GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, GLuint count, const GLvoid *pointer)) \
-    GB_DECL_FWD_NR  (vglVertexAttribPointerMapped,                     void,           (index, pointer),                                                                           (GLuint index, const GLvoid *pointer)) \
-    GB_DECL_FWD     (vglAlloc,                                         void*,          (size, type),                                                                               (uint32_t size, vglMemType type)) \
-    GB_DECL_FWD_NR  (vglEnableRuntimeShaderCompiler,                   void,           (usage),                                                                                    (GLboolean usage)) \
-    GB_DECL_FWD_NR  (vglEnd,                                           void,           (),                                                                                         (void)) \
-    GB_DECL_FWD     (vglForceAlloc,                                    void*,          (size),                                                                                     (uint32_t size)) \
-    GB_DECL_FWD_NR  (vglFree,                                          void,           (addr),                                                                                     (void *addr)) \
-    GB_DECL_FWD     (vglGetGxmTexture,                                 SceGxmTexture*, (target),                                                                                   (GLenum target)) \
-    GB_DECL_FWD     (vglGetProcAddress,                                void*,          (name),                                                                                     (const char *name)) \
-    GB_DECL_FWD     (vglGetTexDataPointer,                             void*,          (target),                                                                                   (GLenum target)) \
-    GB_DECL_FWD     (vglHasRuntimeShaderCompiler,                      GLboolean,      (),                                                                                         (void)) \
-    GB_DECL_FWD_NR  (vglInit,                                          void,           (legacy_pool_size),                                                                         (int legacy_pool_size)) \
-    GB_DECL_FWD_NR  (vglInitExtended,                                  void,           (legacy_pool_size, width, height, ram_threshold, msaa),                                     (int legacy_pool_size, int width, int height, int ram_threshold, SceGxmMultisampleMode msaa)) \
-    GB_DECL_FWD_NR  (vglInitWithCustomSizes,                           void,           (legacy_pool_size, width, height, ram_pool_size, cdram_pool_size, phycont_pool_size, msaa), (int legacy_pool_size, int width, int height, int ram_pool_size, int cdram_pool_size, int phycont_pool_size, SceGxmMultisampleMode msaa)) \
-    GB_DECL_FWD     (vglMemFree,                                       size_t,         (type),                                                                                     (vglMemType type)) \
-    GB_DECL_FWD_NR  (vglSetFragmentBufferSize,                         void,           (size),                                                                                     (uint32_t size)) \
-    GB_DECL_FWD_NR  (vglSetParamBufferSize,                            void,           (size),                                                                                     (uint32_t size)) \
-    GB_DECL_FWD_NR  (vglSetUSSEBufferSize,                             void,           (size),                                                                                     (uint32_t size)) \
-    GB_DECL_FWD_NR  (vglSetVDMBufferSize,                              void,           (size),                                                                                     (uint32_t size)) \
-    GB_DECL_FWD_NR  (vglSetVertexBufferSize,                           void,           (size),                                                                                     (uint32_t size)) \
-    GB_DECL_FWD_NR  (vglSetVertexPoolSize,                             void,           (size),                                                                                     (uint32_t size)) \
-    GB_DECL_FWD_NR  (vglSetupRuntimeShaderCompiler,                    void,           (opt_level, use_fastmath, use_fastprecision, use_fastint),                                  (shark_opt opt_level, int32_t use_fastmath, int32_t use_fastprecision, int32_t use_fastint)) \
-    GB_DECL_FWD_NR  (vglSwapBuffers,                                   void,           (has_commondialog),                                                                         (GLboolean has_commondialog)) \
-    GB_DECL_FWD_NR  (vglTexImageDepthBuffer,                           void,           (target),                                                                                   (GLenum target)) \
-    GB_DECL_FWD_NR  (vglUseTripleBuffering,                            void,           (usage),                                                                                    (GLboolean usage)) \
-    GB_DECL_FWD_NR  (vglUseVram,                                       void,           (usage),                                                                                    (GLboolean usage)) \
-    GB_DECL_FWD_NR  (vglUseVramForUSSE,                                void,           (usage),                                                                                    (GLboolean usage)) \
-    GB_DECL_FWD_NR  (vglUseExtraMem,                                   void,           (usage),                                                                                    (GLboolean usage)) \
-    GB_DECL_FWD_NR  (vglWaitVblankStart,                               void,           (enable),                                                                                   (GLboolean enable))
-
+    GB_DECL_FWD_NR  (glEndTilingQCOM,                                  void,           (preserveMask), (GLbitfield preserveMask))
 
 #define GB_DECL_FWD(func, ret, args, vars) extern ret (*func) vars;
 #define GB_DECL_FWD_HOOK GB_DECL_FWD
