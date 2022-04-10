@@ -334,6 +334,32 @@ int usleep(long usec)
     return nanosleep(&ts, NULL);
 }
 
+static int is_prime(int n) {
+	if (n <= 3)
+		return 1;
+
+	if (n % 2 == 0 || n % 3 == 0)
+		return 0;
+
+	for (int i = 5; i * i <= n; i = i + 6) {
+		if (n % i == 0 || n % (i + 2) == 0)
+			return 0;
+	}
+
+	return 1;
+}
+
+int _ZNSt6__ndk112__next_primeEj_impl(void *this, int n) {
+	if (n <= 1)
+		return 2;
+
+	while (!is_prime(n)) {
+		n++;
+	}
+
+	return n;
+}
+
 DynLibFunction symtable_misc[] = {
     {"_ZdaPv", (uintptr_t)&_ZdaPv},
     {"_ZdlPv", (uintptr_t)&_ZdlPv},
@@ -436,6 +462,7 @@ DynLibFunction symtable_misc[] = {
     {"_ZNSt12length_errorD1Ev", (uintptr_t)&_ZNSt12length_errorD1Ev}, //std::length_error::~length_error()
     {"_ZTVSt12length_error", (uintptr_t)&_ZTVSt12length_error},
     {"_ZNSt13runtime_errorD1Ev", (uintptr_t)&_ZNSt13runtime_errorD1Ev},
+    {"_ZNSt6__ndk112__next_primeEj", (uintptr_t)&_ZNSt6__ndk112__next_primeEj_impl},
     {"__progname", (uintptr_t)&fake__progname},
 
     {NULL, (uintptr_t)NULL}
