@@ -35,6 +35,7 @@ DynLibFunction symtable_openal[] = {
     #undef AL_DECL_FWD
 
     {"alBufferMarkNeedsFreed", (uintptr_t)&bridge_alBufferMarkNeedsFreed},
+    {"_Z22alBufferMarkNeedsFreedj", (uintptr_t)&bridge_alBufferMarkNeedsFreed},
     // {"alcSetThreadContext", (uintptr_t)&bridge_alcSetThreadContext},
     // {"alcGetThreadContext", (uintptr_t)&bridge_alcGetThreadContext},
     {NULL, (uintptr_t)NULL}
