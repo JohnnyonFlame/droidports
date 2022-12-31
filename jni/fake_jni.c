@@ -329,9 +329,20 @@ static jfieldID iface_GetStaticFieldID(JNIEnv *env, jclass clazz, const char* na
 	//WARN_STUB;
 }
 
+static void* memdup(const void* mem, size_t size) { 
+   void* ret = calloc(size ? size : 1, 1);
+   if(ret != NULL && mem != NULL)
+       memcpy(ret, mem, size);
+
+   return ret;
+}
+
 static jstring iface_NewString(JNIEnv *env, const jchar* unicodeChars, jsize len)
 {
-	return strndup(unicodeChars, len);
+	jstring *str = calloc(1, sizeof(*str));
+	*str = &MK_JSTRING(memdup(unicodeChars, len));
+
+	return str;
 }
 
 static jsize iface_GetStringLength(JNIEnv *env, jstring jstr)
