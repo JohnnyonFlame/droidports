@@ -356,6 +356,11 @@ int so_load(so_module *mod, const char *filename, uintptr_t load_addr, void *so_
     tail = mod;
   }
 
+  so_relocate(mod);
+  so_resolve(mod);
+  so_flush_caches(mod, 1);
+  so_initialize(mod);
+
   return 0;
 
   // Oops

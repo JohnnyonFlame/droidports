@@ -86,19 +86,9 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    // Perform module initialization
-    warning("Perform module initialization...\n", lib);
-    so_relocate(&runner);
-    so_resolve(&runner);
-    so_flush_caches(&runner, 1);
-    so_initialize(&runner);
-
-    // Apply port specific patches
-    warning("Applying port specific patches...\n", lib);
+    // Apply port specific patches and reflush
+    warning("Applying port specific patches...\n", libyoyo);
     patch_specifics(&runner);
-
-    // Point of no return - set rx and flush caches
-    warning("Flushing cache...\n", lib);
     so_flush_caches(&runner, 0);
 
     /* Jump into the application */
