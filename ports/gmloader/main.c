@@ -5,6 +5,7 @@
 #include <fcntl.h>
 #include <errno.h>
 
+#include "io_util.h"
 #include "platform.h"
 #include "so_util.h"
 #include "fake_jni.h"
@@ -37,6 +38,7 @@ DynLibFunction *so_dynamic_libraries[] = {
 int main(int argc, char *argv[])
 {
     uintptr_t address = 0x40000000;
+    uintptr_t address2 = 0;
     char *apk_path = argv[1];
     int extract = 0;
 
@@ -65,22 +67,43 @@ int main(int argc, char *argv[])
     }
 
     /* Load elf module */
-    void *inflated_ptr = NULL;
+    void *yoyo_inflated_ptr = NULL;
+    void *stdcpp_inflated_ptr = NULL;
 #if ARCH_ARMV6
-    char *lib = "lib/armeabi/libyoyo.so";
+    char *libyoyo = "lib/armeabi/libyoyo.so";
+    char *libcpp = "lib/armeabi/libc++_shared.so";
 #else
-    char *lib = "lib/armeabi-v7a/libyoyo.so";
+    char *libyoyo = "lib/armeabi-v7a/libyoyo.so";
+    char *libcpp = "lib/armeabi-v7a/libc++_shared.so";
 #endif
-    warning("Inflating %s...\n", lib);
+    warning("Inflating %s...\n", libcpp);
     size_t inflated_bytes = 0;
-    if (zip_inflate_buf(apk, lib, &inflated_bytes, &inflated_ptr) == 0) {
+    if (zip_inflate_buf(apk, libcpp, &inflated_bytes, &stdcpp_inflated_ptr) == 0) {
+        int fd;
+        if (!io_buffer_from_file("libc++_shared.so", &fd, &stdcpp_inflated_ptr, &inflated_bytes, 0)) {
+            fatal_error("Failed to acquire libc++_shared.so, exiting.\n");
+            return -1;
+        }
+    }
+
+    warning("Loading runner elf %s (%p, %d bytes)...\n", libcpp, stdcpp_inflated_ptr, inflated_bytes);
+    so_module cpp = {};
+    int ret = so_load(&cpp, libcpp, address2, stdcpp_inflated_ptr, inflated_bytes);
+    if (ret != 0) {
+        fatal_error("Unable to load library!\n");
+        return -1;
+    }
+
+    warning("Inflating %s...\n", libyoyo);
+    inflated_bytes = 0;
+    if (zip_inflate_buf(apk, libyoyo, &inflated_bytes, &yoyo_inflated_ptr) == 0) {
         fatal_error("Failed to acquire shared library, exiting.\n");
         return -1;
     }
 
-    warning("Loading runner elf %s (%p, %d bytes)...\n", lib, inflated_ptr, inflated_bytes);
+    warning("Loading runner elf %s (%p, %d bytes)...\n", libyoyo, yoyo_inflated_ptr, inflated_bytes);
     so_module runner = {};
-    int ret = so_load(&runner, lib, address, inflated_ptr, inflated_bytes);
+    ret = so_load(&runner, libyoyo, address, yoyo_inflated_ptr, inflated_bytes);
     if (ret != 0) {
         fatal_error("Unable to load library!\n");
         return -1;
