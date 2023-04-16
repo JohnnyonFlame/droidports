@@ -9,6 +9,7 @@
 #include <signal.h>
 #include <setjmp.h>
 #include <malloc.h>
+#include <unistd.h>
 #include <sys/time.h>
 
 #include "platform.h"
@@ -24,6 +25,7 @@ extern void *_Znwj;
 
 extern void *__assert2;
 extern void *__cxa_atexit;
+extern void *__cxa_thread_atexit_impl;
 extern void *__cxa_finalize;
 extern void *__cxa_pure_virtual;
 extern void *__cxa_end_catch;
@@ -323,7 +325,7 @@ Time64_T timegm64_impl(const struct TM *date) {
     seconds += date->tm_sec;
     return(seconds);
 }
-
+#if 0
 int usleep(long usec)
 {
     struct timespec ts = {
@@ -333,7 +335,7 @@ int usleep(long usec)
 
     return nanosleep(&ts, NULL);
 }
-
+#endif
 static int is_prime(int n) {
 	if (n <= 3)
 		return 1;
@@ -361,10 +363,6 @@ int _ZNSt6__ndk112__next_primeEj_impl(void *this, int n) {
 }
 
 DynLibFunction symtable_misc[] = {
-    {"_ZdaPv", (uintptr_t)&_ZdaPv},
-    {"_ZdlPv", (uintptr_t)&_ZdlPv},
-    {"_Znaj", (uintptr_t)&_Znaj},
-    {"_Znwj", (uintptr_t)&_Znwj},
     {"__gnu_Unwind_Find_exidx", (uintptr_t)&__gnu_Unwind_Find_exidx},
 
     {"__aeabi_atexit", (uintptr_t)&atexit_fake},
@@ -385,6 +383,7 @@ DynLibFunction symtable_misc[] = {
     {"__android_log_vprint", (uintptr_t)&impl__android_log_vprint},
 
     {"__cxa_atexit", (uintptr_t)&__cxa_atexit},
+    {"__cxa_thread_atexit_impl", (uintptr_t)&__cxa_thread_atexit_impl},
     {"__cxa_finalize", (uintptr_t)&__cxa_finalize},
     {"__cxa_pure_virtual", (uintptr_t)&__cxa_pure_virtual},
     {"__cxa_end_catch", (uintptr_t)&__cxa_end_catch},
@@ -394,13 +393,12 @@ DynLibFunction symtable_misc[] = {
     {"__cxa_free_exception", (uintptr_t)&__cxa_free_exception},
     {"__cxa_guard_acquire", (uintptr_t)&__cxa_guard_acquire},
     {"__cxa_guard_release", (uintptr_t)&__cxa_guard_release},
-    {"_ZTVN10__cxxabiv117__class_type_infoE", (uintptr_t)&_ZTVN10__cxxabiv117__class_type_infoE},
-    {"_ZTVN10__cxxabiv120__si_class_type_infoE", (uintptr_t)&_ZTVN10__cxxabiv120__si_class_type_infoE},
 
     {"__errno", (uintptr_t)&__errno_location},
     {"__stack_chk_fail", (uintptr_t)&__stack_chk_fail},
     {"__stack_chk_guard", (uintptr_t)&__stack_chk_guard_fake},
 
+    {"sysconf", (uintptr_t)&sysconf},
     {"sigaction", (uintptr_t)&ret0},
     {"sigemptyset", (uintptr_t)&ret0},
 
@@ -457,12 +455,8 @@ DynLibFunction symtable_misc[] = {
     {"rand", (uintptr_t)&rand},
     {"srand", (uintptr_t)&srand},
     {"nanosleep", (uintptr_t)&nanosleep},
+    {"getpid", (uintptr_t)&getpid},
     {"usleep", (uintptr_t)&usleep},
-
-    {"_ZNSt12length_errorD1Ev", (uintptr_t)&_ZNSt12length_errorD1Ev}, //std::length_error::~length_error()
-    {"_ZTVSt12length_error", (uintptr_t)&_ZTVSt12length_error},
-    {"_ZNSt13runtime_errorD1Ev", (uintptr_t)&_ZNSt13runtime_errorD1Ev},
-    {"_ZNSt6__ndk112__next_primeEj", (uintptr_t)&_ZNSt6__ndk112__next_primeEj_impl},
     {"__progname", (uintptr_t)&fake__progname},
 
     {NULL, (uintptr_t)NULL}
