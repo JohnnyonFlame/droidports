@@ -74,6 +74,7 @@
     FB_DECL_FWD(frexpf,      float,         (x, y),        (float x, int    *y))              \
     FB_DECL_FWD(modff,       float,         (x, y),        (float x, float  *y))              \
     FB_DECL_FWD(powf,        float,         (x, y),        (float x, float   y))              \
+    FB_DECL_FWD(fmaxf,       float,         (x, y),        (float x, float   y))              \
     FB_DECL_FWD(remainderf,  float,         (x, y),        (float x, float   y))              \
     FB_DECL_FWD(scalbnf,     float,         (x, y),        (float x, int     y))              \
     FB_DECL_FWD(fmod,        double,        (x, y),        (double x, double  y))             \

@@ -292,6 +292,7 @@ DynLibFunction symtable_ctype[] = {
 	{"strtok", (uintptr_t)&strtok},
 	{"strtol", (uintptr_t)&strtol},
 	{"strtoul", (uintptr_t)&strtoul},
+	{"strtoull", (uintptr_t)&strtoull},
 	{"strdup", (uintptr_t)&strdup_impl},
 	{"strndup", (uintptr_t)&strndup_impl},
 	

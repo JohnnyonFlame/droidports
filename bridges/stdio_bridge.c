@@ -167,6 +167,11 @@ ABI_ATTR int bridge_vsprintf(char *s, const char *fmt, va_list va)
     return ret;
 }
 
+ABI_ATTR int bridge___vsprintf_chk(char * s, int flag, size_t slen, const char * format, va_list args)
+{
+    return __vsprintf_chk(s, flag, slen, format, args);
+}
+
 ABI_ATTR int bridge_vasprintf(char **s, const char *fmt, ...)
 {
     int ret;
@@ -261,6 +266,70 @@ ABI_ATTR int _hybris_hook_scandir(const char *dir,
     return _hybris_hook_scandirat(AT_FDCWD, dir, namelist, filter, compar);
 }
 
+extern void *__memcpy_chk;
+extern void *__memmove_chk;
+extern void *__memset_chk;
+extern void *__strcat_chk;
+extern void *__strcpy_chk;
+extern void *__strlcat_chk;
+extern void *__strlcpy_chk;
+extern void *__strlen_chk;
+extern void *__strrchr_chk;
+
+ABI_ATTR char *__strncat_chk_impl(char *s1, const char *s2, size_t n, size_t s1len) {
+	return strncat(s1, s2, n);
+}
+
+size_t
+strlcat(char * restrict dst, const char * restrict src, size_t maxlen) {
+    const size_t srclen = strlen(src);
+    const size_t dstlen = strnlen(dst, maxlen);
+    if (dstlen == maxlen) return maxlen+srclen;
+    if (srclen < maxlen-dstlen) {
+        memcpy(dst+dstlen, src, srclen+1);
+    } else {
+        memcpy(dst+dstlen, src, maxlen-1);
+        dst[dstlen+maxlen-1] = '\0';
+    }
+    return dstlen + srclen;
+}
+
+size_t
+strlcpy(char * restrict dst, const char * restrict src, size_t maxlen) {
+    const size_t srclen = strlen(src);
+    if (srclen < maxlen) {
+        memcpy(dst, src, srclen+1);
+    } else if (maxlen != 0) {
+        memcpy(dst, src, maxlen-1);
+        dst[maxlen-1] = '\0';
+    }
+    return srclen;
+}
+
+char* __strchr_chk_impl(const char* p, int ch, size_t s_len) {
+	return strchr(p, ch);
+}
+
+ABI_ATTR char *__strrchr_chk_impl(const char *p, int ch, size_t s_len) {
+	return strrchr(p, ch);
+}
+
+ABI_ATTR char *__strcpy_chk_impl(char *dest, const char *src, size_t destlen) {
+	return strcpy(dest, src);
+}
+
+ABI_ATTR size_t __strlcat_chk_impl(char *dest, char *src, size_t len, size_t dstlen) {
+	return strlcat(dest, src, len);
+}
+
+ABI_ATTR size_t __strlen_chk_impl(const char *s, size_t s_len) {
+	return strlen(s);
+}
+
+ABI_ATTR size_t __strlcpy_chk_impl(char *dest, char *src, size_t len, size_t dstlen) {
+	return strlcpy(dest, src, len);
+}
+
 DynLibFunction symtable_stdio[] = {
     #define STDIO_DECL(name, f, ret, ret_type, cast, vals, args) {#name, (uintptr_t)&bridge_##name},
     STDIO_HOOKS
@@ -277,6 +346,19 @@ DynLibFunction symtable_stdio[] = {
     {"snprintf", (uintptr_t)&bridge_snprintf},
     {"vsnprintf", (uintptr_t)&bridge_vsnprintf},
     {"vsprintf", (uintptr_t)&bridge_vsprintf},
+	{"__strchr_chk", (uintptr_t)&__strchr_chk_impl },
+	{"__strcpy_chk", (uintptr_t)&__strcpy_chk_impl },
+	{"__strlcat_chk", (uintptr_t)&__strlcat_chk_impl },
+	{"__strlen_chk", (uintptr_t)&__strlen_chk_impl },
+	{"__strrchr_chk", (uintptr_t)&__strrchr_chk_impl },
+	{"__strncat_chk", (uintptr_t)&__strncat_chk_impl },
+	{"__strlcpy_chk", (uintptr_t)&__strlcpy_chk_impl },
+    {"__memcpy_chk", (uintptr_t)&__memcpy_chk },
+	{"__memmove_chk", (uintptr_t)&__memmove_chk },
+	{"__memset_chk", (uintptr_t)&__memset_chk },
+	{"__strcat_chk", (uintptr_t)&__strcat_chk },
+	{"__vsprintf_chk", (uintptr_t)&__vsprintf_chk },
+	{"__vsnprintf_chk", (uintptr_t)&__vsnprintf_chk },
     {"vasprintf", (uintptr_t)&bridge_vasprintf},
     {"sscanf", (uintptr_t)&bridge_sscanf},
     {"vprintf", (uintptr_t)&bridge_vprintf},
