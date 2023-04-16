@@ -74,6 +74,9 @@ ABI_ATTR int pthread_mutex_lock_bridge(BIONIC_pthread_mutex_t *_uid)
 
     if (uid < (BIONIC_pthread_mutex_t*)0x1000)
         return -1;
+
+    if (!*uid)
+        pthread_mutex_init_bridge(uid, NULL);
     
     return pthread_mutex_lock(*uid);
 }
