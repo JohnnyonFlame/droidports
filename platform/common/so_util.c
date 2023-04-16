@@ -229,8 +229,14 @@ int so_load(so_module *mod, const char *filename, uintptr_t load_addr, void *so_
         // Allocate arena for code patches, trampolines, etc
         // Sits exactly under the desired allocation space
         mod->patch_size = ALIGN_MEM(PATCH_SZ, mod->phdr[i].p_align);
-        mod->patch_blockid = block_alloc(1, load_addr - mod->patch_size, mod->patch_size);
-        mod->patch_base = block_get_base_address(mod->patch_blockid);
+        if (load_addr)
+          mod->patch_blockid = block_alloc(1, load_addr - mod->patch_size, mod->patch_size);
+        else {
+          mod->patch_blockid = block_alloc(1, NULL, mod->patch_size + mod->patch_size);
+          load_addr += mod->patch_size;
+        }
+
+        mod->patch_base = (uintptr_t)block_get_base_address(mod->patch_blockid);
         mod->patch_head = mod->patch_base;
 
         // Allocate space for the .text section
