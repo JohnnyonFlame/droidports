@@ -330,6 +330,19 @@ ABI_ATTR size_t __strlcpy_chk_impl(char *dest, char *src, size_t len, size_t dst
 	return strlcpy(dest, src, len);
 }
 
+ABI_ATTR size_t __vsprintf_chk_impl(char * s, int flag, size_t max, const char * fmt, va_list va)
+{
+    int ret;
+    ret = vsprintf(s, fmt, va);
+
+    return ret;
+}
+
+ABI_ATTR int __vsnprintf_chk_impl(char * s, size_t maxlen, int flag, size_t slen, const char * format, va_list args)
+{
+    return __vsnprintf_chk(s, maxlen, flag, slen, format, args);
+}
+
 DynLibFunction symtable_stdio[] = {
     #define STDIO_DECL(name, f, ret, ret_type, cast, vals, args) {#name, (uintptr_t)&bridge_##name},
     STDIO_HOOKS
@@ -357,8 +370,8 @@ DynLibFunction symtable_stdio[] = {
 	{"__memmove_chk", (uintptr_t)&__memmove_chk },
 	{"__memset_chk", (uintptr_t)&__memset_chk },
 	{"__strcat_chk", (uintptr_t)&__strcat_chk },
-	{"__vsprintf_chk", (uintptr_t)&__vsprintf_chk },
-	{"__vsnprintf_chk", (uintptr_t)&__vsnprintf_chk },
+	{"__vsprintf_chk", (uintptr_t)&__vsprintf_chk_impl },
+	{"__vsnprintf_chk", (uintptr_t)&__vsnprintf_chk_impl },
     {"vasprintf", (uintptr_t)&bridge_vasprintf},
     {"sscanf", (uintptr_t)&bridge_sscanf},
     {"vprintf", (uintptr_t)&bridge_vprintf},
