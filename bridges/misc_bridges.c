@@ -364,6 +364,7 @@ int _ZNSt6__ndk112__next_primeEj_impl(void *this, int n) {
 
 DynLibFunction symtable_misc[] = {
     {"__gnu_Unwind_Find_exidx", (uintptr_t)&__gnu_Unwind_Find_exidx},
+    {"dl_unwind_find_exidx", (uintptr_t)&__gnu_Unwind_Find_exidx},
 
     {"__aeabi_atexit", (uintptr_t)&atexit_fake},
     {"__aeabi_memclr", (uintptr_t)&aeabi_memclr_impl},
@@ -449,6 +450,7 @@ DynLibFunction symtable_misc[] = {
     {"memset", (uintptr_t)&memset},
     {"memchr", (uintptr_t)&memchr},
     {"memcmp", (uintptr_t)&memcmp},
+    {"memalign", (uintptr_t)&memalign},
 
     {"puts", (uintptr_t)&puts},
     {"qsort", (uintptr_t)&qsort},
