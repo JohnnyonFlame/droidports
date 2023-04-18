@@ -534,9 +534,8 @@ int so_resolve(so_module *mod) {
             }
             else {
               fatal_error("Missing: %s\n", mod->dynstr + sym->st_name);
-              fail = 1;
+              //fail = 1;
             }
-              
           }
         }
 
