@@ -25,7 +25,7 @@ extern int io_buffer_from_file(const char *filename, int *_fd, void **buf, size_
     char *mmap_hint = getenv("GMLOADER_MMAP");
     if ((!mmap_hint || *mmap_hint == '1') && ((hints & IO_HINT_MMAP) == IO_HINT_MMAP)) {
         // IO_HINT_MMAP:: If possible, memory map this file instead.
-        mem = mmap(NULL, mem_sz, PROT_WRITE, MAP_PRIVATE, fd, NULL);
+        mem = mmap(NULL, mem_sz, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, NULL);
         if (mem == NULL) {
             goto io_bfff_fd;
         }
