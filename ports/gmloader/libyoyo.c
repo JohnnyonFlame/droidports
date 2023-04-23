@@ -551,6 +551,9 @@ void patch_specifics(so_module *mod)
     // Rework achievement systems
     register_achievements_functs(fct_add);
 
+    // Hooks for compresseed textures
+    register_texture_functs(mod);
+
     // This function uses unaligned addresses on a ldmia instruction as an optimization
     // work around it with trampolines. If SIGBUSes happen on other address due to ldmia, might
     // be interesting to add them here or implement the hack globally.
@@ -625,6 +628,7 @@ void flushWhenFull()
 static void apply_hacks()
 {
     //TODO:: Add these back in when config files are worked into the project
+    setup_ended = 1;
 #if 0 
     routine_t surface_depth_disable = FindFunctionRoutine("surface_depth_disable");
     if (surface_depth_disable != NULL) {
