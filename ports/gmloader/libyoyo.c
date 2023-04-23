@@ -328,13 +328,19 @@ ABI_ATTR int CAudioGroupMan__LoadGroup_reimpl(CAudioGroupMan *this, int groupId)
         }
     }
 
-    CAudioGroup *piVar4;
     char filename[PATH_MAX]; 
-    void *mem = NULL;
+    void *loaded_grp_chunk = NULL;
     size_t mem_sz = 0;
 
     if (!group_info) {
         group_info = calloc(this->m_groupCount + 1, sizeof(group_info[0]));
+        for (int i = 0; i < this->m_groupCount + 1; i++) {
+            group_info[i] = (AudioGroupInfo){
+                .fd = -1,
+                .memory_map = NULL,
+                .memory_map_sz = 0,
+            };
+        }
     }
 
     if ((groupId < 1) || (this->m_groupCount <= groupId) || this->m_ppGroups[groupId] == NULL) {
@@ -344,33 +350,40 @@ ABI_ATTR int CAudioGroupMan__LoadGroup_reimpl(CAudioGroupMan *this, int groupId)
 
     snprintf(filename, sizeof(filename), "%saudiogroup%d.dat", get_platform_savedir(), groupId);
     int fd = -1;
-    // Attempt to load from the working directory directly... (and if possibly,  mmaped)
-    if (!io_buffer_from_file(filename, &fd, &mem, &mem_sz, IO_HINT_MMAP)) {
-        // That failed, attempt to load from the apk
-        snprintf(filename, sizeof(filename), "assets/audiogroup%d.dat", groupId);
-        if (!zip_inflate_buf(zip_get_current_apk(), filename, &mem_sz, &mem)) {
-            fatal_error("Unable to open Audio Group %d!\n", groupId);
-            return 0;
+
+    if (group_info[groupId].fd < 0) {
+        // Attempt to load from the working directory directly... (and if possibly,  mmaped)
+        if (!io_buffer_from_file(filename, &fd, &loaded_grp_chunk, &mem_sz, IO_HINT_MMAP)) {
+            // That failed, attempt to load from the apk
+            snprintf(filename, sizeof(filename), "assets/audiogroup%d.dat", groupId);
+            if (!zip_inflate_buf(zip_get_current_apk(), filename, &mem_sz, &loaded_grp_chunk)) {
+                fatal_error("Unable to open Audio Group %d!\n", groupId);
+                return 0;
+            }
         }
+    } else {
+        warning("Audio Group %d already memory mapped, skipping!\n", groupId);
+        return 1;
     }
 
-    if (strncmp(mem + 8, "AUDO", 4) != 0) {
+    if (strncmp(loaded_grp_chunk + 8, "AUDO", 4) != 0) {
         fatal_error("Unable to stat '%s'\n", filename);
         goto audio_free_buf;
     }
 
-    CAudioGroup *grp = this->m_ppGroups[groupId];
-    grp->m_pData = mem;
-    grp->m_eLoadState = 1;
-    grp->m_loadProgress = 0;
-    grp->m_soundsLoaded = 0;
-    uint32_t sz = *(uint32_t*)(mem + 0xc);
-    if (sz == 0) {
+    int count = *(int*)((uintptr_t)loaded_grp_chunk + 0xc);
+    if (count == 0) {
         fatal_error("Audiogroup '%s' is empty.\n", filename);
         goto audio_close_fd;
     }
 
-    Audio_WAVs(mem + 0x10, sz, mem, groupId);
+    CAudioGroup *grp = this->m_ppGroups[groupId];
+    grp->m_pData = loaded_grp_chunk;
+    grp->m_eLoadState = 1;
+    grp->m_loadProgress = 0;
+    grp->m_soundsLoaded = 0;
+
+    Audio_WAVs(loaded_grp_chunk + 0x10, count, loaded_grp_chunk, groupId);
     CThread *thr = grp->m_pLoadThread;
     if (thr == NULL) {
         grp->m_pLoadThread = thr = malloc(sizeof(CThread));
@@ -388,15 +401,15 @@ ABI_ATTR int CAudioGroupMan__LoadGroup_reimpl(CAudioGroupMan *this, int groupId)
         CThread__start_NS(thr, Audio_Load_cb, grp);
 
     group_info[groupId].fd = fd;
-    group_info[groupId].memory_map = mem;
+    group_info[groupId].memory_map = loaded_grp_chunk;
     group_info[groupId].memory_map_sz = mem_sz;
     return 1;
 
 audio_free_buf:
     if (fd < 0)
-        free(mem);
+        free(loaded_grp_chunk);
     else {
-        munmap(mem, mem_sz);
+        munmap(loaded_grp_chunk, mem_sz);
         close(fd);
     }
 audio_close_fd:
