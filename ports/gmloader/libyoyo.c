@@ -86,6 +86,12 @@ static char *fake_functs[] = {
 static char platform_savedir[PATH_MAX] = "";
 void setup_platform_savedir(const char *gamename)
 {
+    char *envdir = getenv("GMLOADER_SAVEDIR");
+    if (envdir != NULL) {
+        snprintf(platform_savedir, sizeof(platform_savedir), "%s", envdir);
+        return;
+    }
+
     // For linux targets
 	snprintf(platform_savedir, sizeof(platform_savedir), "%s/.config/%s/", getenv("HOME"), gamename);
 	warning("Saving to folder %s.\n", platform_savedir);
@@ -467,6 +473,7 @@ ABI_ATTR void RunnerLoadGame_reimpl()
         // Attempt to load game.droid from the working directory
         char WADNAME[PATH_MAX] = {};
         snprintf(WADNAME, sizeof(WADNAME), "%s%s", get_platform_savedir(), "game.droid");
+        warning("Trying to load WAD from %s.\n", WADNAME);
         if (io_buffer_from_file(WADNAME, &g_fdGameFileBuffer, g_pGameFileBuffer, &sz, IO_HINT_MMAP)) {
             *g_pWorkingDirectory = strdup(get_platform_savedir());
             *g_GameFileLength = sz;
