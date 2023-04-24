@@ -655,18 +655,22 @@ static void apply_hacks()
 {
     //TODO:: Add these back in when config files are worked into the project
     setup_ended = 1;
-#if 0 
+    
+    char *disable_depth = getenv("GMLOADER_DEPTH_DISABLE");
     routine_t surface_depth_disable = FindFunctionRoutine("surface_depth_disable");
-    if (surface_depth_disable != NULL) {
-        RValue ret;
-        RValue args[1] = {
-            {.kind = VALUE_BOOL, .rvalue.val = 1}
-        };
+    if (disable_depth && disable_depth[0] == '1') {
+        if (surface_depth_disable != NULL) {
+            RValue ret;
+            RValue args[1] = {
+                {.kind = VALUE_BOOL, .rvalue.val = 1}
+            };
 
-        surface_depth_disable(&ret, NULL, NULL, 1, &args[0]);
-        warning("HACK:: Disabled surface depth.\n");
+            surface_depth_disable(&ret, NULL, NULL, 1, &args[0]);
+            warning("HACK:: Disabled surface depth.\n");
+        } else {
+            warning("Depth disable hack requested but surface_depth_disable unusable.\n");
+        }
     }
-#endif
 }
 
 //TODO:: APK path, savepath, etc, shouldn't be hardcoded
