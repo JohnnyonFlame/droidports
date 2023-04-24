@@ -589,7 +589,7 @@ static void createSplashTexture(zip_t *apk, GLuint *tex, int *w_tex, int *h_tex,
 {
     void *inflated_ptr = NULL;
     size_t inflated_bytes = 0;
-    uint8_t *pixels = NULL;
+    uint32_t *pixels = NULL;
 
     int _;
     if (zip_inflate_buf(apk, "assets/splash.png", &inflated_bytes, &inflated_ptr)) {
@@ -599,7 +599,7 @@ static void createSplashTexture(zip_t *apk, GLuint *tex, int *w_tex, int *h_tex,
         *w = 320;
         *h = 240;
         warning("Warning, no splash image available, creating xor pattern...\n");
-        pixels = malloc(320 * 240 * sizeof(pixels[0]));
+        pixels = malloc(320 * 240 * sizeof(uint32_t));
 
         for (int i = 0; i < 240; i++) {
             for (int j = 0; j < 320; j++) {
