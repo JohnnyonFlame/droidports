@@ -51,7 +51,6 @@ include_directories(
     ${OPENAL_INCLUDE_DIRS}
     ${ZLIB_INCLUDE_DIRS}
     ${VORBIS_INCLUDE_DIRS}
-    ${LODEPNG_INC_PATH}
     "platform/${PLATFORM}"   
     "platform/common"   
     "bridges"
@@ -93,7 +92,6 @@ set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS} -D__FILENAME__='\"$(subst ${CMAKE_SOURCE_D
 target_link_libraries(${PORT}
     stdc++
     m
-    "lodepng"
     ${SDL2_LIBRARY}
     ${ZLIB_LIBRARY}
     ${LIBZIP_LIBRARY}

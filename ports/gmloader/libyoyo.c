@@ -3,12 +3,17 @@
 #include <fcntl.h>
 #include <zip.h>
 #include <string.h>
-#include <lodepng.h>
 #include <math.h>
 #include <pthread.h>
 #include <sys/types.h>
 #include <unistd.h>
 
+#define STBI_MALLOC malloc
+#define STBI_REALLOC realloc
+#define STBI_FREE free
+#define STB_IMAGE_IMPLEMENTATION
+#define STB_ONLY_PNG
+#include "stb_image.h"
 #include "pthread_bridge.h"
 #include "platform.h"
 #include "so_util.h"
@@ -584,10 +589,11 @@ static void createSplashTexture(zip_t *apk, GLuint *tex, int *w_tex, int *h_tex,
 {
     void *inflated_ptr = NULL;
     size_t inflated_bytes = 0;
-    uint32_t *pixels = NULL;
+    uint8_t *pixels = NULL;
 
+    int _;
     if (zip_inflate_buf(apk, "assets/splash.png", &inflated_bytes, &inflated_ptr)) {
-        lodepng_decode32((unsigned char **)&pixels, w, h, inflated_ptr, inflated_bytes);
+        pixels = (uint8_t*)stbi_load_from_memory(inflated_ptr, inflated_bytes, w, h, &_, 4);
         free(inflated_ptr);
     } else {
         *w = 320;

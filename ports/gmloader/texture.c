@@ -5,10 +5,6 @@
 #include "libyoyo_internals.h"
 #include "libyoyo.h"
 
-#define STBI_MALLOC malloc
-#define STBI_REALLOC realloc
-#define STBI_FREE free
-#define STB_IMAGE_IMPLEMENTATION
 #define STB_ONLY_PNG
 #include "stb_image.h"
 #include "io_util.h"
