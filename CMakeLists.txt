@@ -87,6 +87,9 @@ add_executable(${PORT}
   ${PLATFORM_SOURCES} # Platform specific files
 )
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__FILENAME__='\"$(subst ${CMAKE_SOURCE_DIR}/,,$(abspath $<))\"'")
+set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS} -D__FILENAME__='\"$(subst ${CMAKE_SOURCE_DIR}/,,$(abspath $<))\"'")
+
 target_link_libraries(${PORT}
     stdc++
     m

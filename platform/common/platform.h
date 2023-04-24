@@ -16,12 +16,12 @@
 #define ARCH_ARMV6 (defined(__ARM_ARCH_6__) || defined(__ARM_ARCH_6J__) || defined(__ARM_ARCH_6K__) || defined(__ARM_ARCH_6Z__) || defined(__ARM_ARCH_6ZK__))
 
 #ifdef DEBUG
-    #define fatal_error(msg, ...) { fprintf(stderr, "%s:%d: " msg, __FILE__, __LINE__, ##__VA_ARGS__); }
+    #define fatal_error(msg, ...) { fprintf(stderr, "%s:%d: " msg, __FILENAME__, __LINE__, ##__VA_ARGS__); }
     #define warning(msg, ...) { fprintf(stderr, msg, ##__VA_ARGS__); }
     #define WARN_STUB fprintf(stderr, "Warning, stubbed function \"%s\".\n", __FUNCTION__);
 #else
-    #define fatal_error(msg, ...) { fprintf(stderr, "%s:%d: " msg, __FILE__, __LINE__, ##__VA_ARGS__); }
-    #define warning(msg, ...)
+    #define fatal_error(msg, ...) { fprintf(stderr, "%s:%d: " msg, __FILENAME__, __LINE__, ##__VA_ARGS__); }
+    #define warning(msg, ...) { fprintf(stderr, msg, ##__VA_ARGS__); }
     #define WARN_STUB
 #endif
 
