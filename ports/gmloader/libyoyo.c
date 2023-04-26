@@ -492,22 +492,18 @@ ABI_ATTR void RunnerLoadGame_reimpl()
         char WADNAME[PATH_MAX] = {};
         snprintf(WADNAME, sizeof(WADNAME), "%s%s", get_platform_savedir(), "game.droid");
         warning("Trying to load WAD from %s.\n", WADNAME);
-        if (io_buffer_from_file(WADNAME, &g_fdGameFileBuffer, g_pGameFileBuffer, &sz, IO_HINT_MMAP)) {
-            *g_pWorkingDirectory = strdup(get_platform_savedir());
-            *g_GameFileLength = sz;
-            return;
+
+        // First try to load from savedir, then from the apk
+        if (!io_buffer_from_file(WADNAME, &g_fdGameFileBuffer, g_pGameFileBuffer, &sz, IO_HINT_MMAP)) {
+            if (!zip_inflate_buf(zip_get_current_apk(), "assets/game.droid", &sz, g_pGameFileBuffer)) {
+                // Failed completely...
+                fatal_error("Unable to open game's WAD file.\n");
+                exit(-1);
+            }
         }
 
-        // Now attempt from the APK
-        if (zip_inflate_buf(zip_get_current_apk(), "assets/game.droid", &sz, g_pGameFileBuffer)) {
-            *g_pWorkingDirectory = strdup("assets/");
-            *g_GameFileLength = sz;
-            return;
-        }
-
-        // Failed completely...
-        fatal_error("Unable to open game's WAD file.\n");
-        exit(-1);
+        *g_pWorkingDirectory = strdup("assets/");
+        *g_GameFileLength = sz;
     }
 }
 
