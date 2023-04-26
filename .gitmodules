@@ -1,6 +1,3 @@
-[submodule "3rdparty/lodepng"]
-	path = 3rdparty/lodepng
-	url = https://github.com/lvandeve/lodepng
 [submodule "3rdparty/freetype"]
 	path = 3rdparty/freetype
 	url = https://github.com/freetype/freetype
