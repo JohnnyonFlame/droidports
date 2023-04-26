@@ -38,13 +38,18 @@ void LoadTextureFromPNG_generic(uint32_t arg1, uint32_t arg2, uint32_t *flags, u
         if (width == 2 && height == 1) {
             if (data[0] == 0xFFBEADDE) {
                 int fd;
-                pvrtc_file *ext_data;
-                size_t ext_data_sz;
+                pvrtc_file *ext_data = NULL;
+                size_t ext_data_sz = 0;
                 uint32_t idx = (data[1] << 8) >> 8;
                 char fname[256];
 
-                sprintf(fname, "%s%u.pvr", get_platform_savedir(), idx);
-                io_buffer_from_file(fname, &fd, &ext_data, &ext_data_sz, 0);
+				// Load from APK first and then try the gamedir
+                sprintf(fname, "assets/%u.pvr", idx);
+				if (!zip_inflate_buf(zip_get_current_apk(), fname, &ext_data_sz, &ext_data)) {
+                	sprintf(fname, "%s%u.pvr", get_platform_savedir(), idx);
+                	io_buffer_from_file(fname, &fd, &ext_data, &ext_data_sz, 0);
+				}
+
                 warning("Trying to load %s... %p\n", fname, ext_data);
                 
                 if (ext_data) {
@@ -152,20 +157,33 @@ uint32_t png_get_IHDR_hook(uint32_t *png_ptr, uint32_t *info_ptr, uint32_t *widt
 
 	if (!setup_ended && *width == 2 && *height == 1) {
 		char fname[256];
+		FILE *f;
+		uint32_t _sz;
+		uint32_t *buffer;
 
-		sprintf(fname, "%s%d.pvr", get_platform_savedir(), image_preload_idx);
-		FILE *f = fopen(fname, "rb");
-		if (f) {
-			fseek(f, 0x18, SEEK_SET);
-			fread(height, 1, 4, f);
-			fread(width, 1, 4, f);
-			fclose(f);
+		*width = 0;
+		*height = 0;
+
+		sprintf(fname, "assets/%u.pvr", image_preload_idx);
+		if (zip_inflate_buf_sz(zip_get_current_apk(), fname, &_sz, &buffer, 0x20)) {
+			*width = buffer[6];
+			*height = buffer[7];
+			free(buffer);
 		} else {
-			sprintf(fname, "%s%d.png", get_platform_savedir(), image_preload_idx);
-
-			int dummy;
-			stbi_info(fname, width, height, &dummy);
+			sprintf(fname, "%s%d.pvr", get_platform_savedir(), image_preload_idx);
+			FILE *f = fopen(fname, "rb");
+			if (f) {
+				fseek(f, 0x18, SEEK_SET);
+				fread(height, 1, 4, f);
+				fread(width, 1, 4, f);
+				fclose(f);
+			}
 		}
+
+		if (*width == 0 || *height == 0) {
+			warning("Texture %d metadata preload failure.\n", image_preload_idx);
+		}
+		
 		image_preload_idx++;
 	}
 	return 1;

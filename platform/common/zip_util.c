@@ -59,6 +59,11 @@ inflate_file_zip:
 
 int zip_inflate_buf(zip_t *zip, const char *file, size_t *inflated_bytes, void **bytes)
 {
+    return zip_inflate_buf_sz(zip, file, inflated_bytes, bytes, 0);
+}
+
+int zip_inflate_buf_sz(zip_t *zip, const char *file, size_t *inflated_bytes, void **bytes, size_t max_bytes)
+{
     /* Attempt to locate the file */
     /* Get the uncompressed size */
     zip_stat_t so_stat;
@@ -73,16 +78,20 @@ int zip_inflate_buf(zip_t *zip, const char *file, size_t *inflated_bytes, void *
         return 0;
     }
 
+    if (max_bytes == 0) {
+        max_bytes = so_stat.size;
+    }
+
     zip_int64_t br;
-    void *buf = malloc(so_stat.size);
-    if ((br = zip_fread(f, buf, so_stat.size)) != so_stat.size) {
+    void *buf = malloc(max_bytes);
+    if ((br = zip_fread(f, buf, max_bytes)) != max_bytes) {
         fatal_error("Reading file failed, read %lld out of %lld bytes.\n", br, so_stat.size);
         zip_fclose(f);
         free(buf);
         return 0;
     }
 
-    *inflated_bytes = so_stat.size;
+    *inflated_bytes = max_bytes;
     *bytes = buf;
 
     zip_fclose(f);
