@@ -359,14 +359,6 @@ int update_input()
         }
     }
 
-    _IO_KeyDown[vk_anykey] = any_key_down;
-    _IO_KeyPressed[vk_anykey] = any_key_pressed;
-    _IO_KeyReleased[vk_anykey] = any_key_released;
-
-    _IO_KeyDown[vk_nokey] = !_IO_KeyDown[vk_anykey];
-    _IO_KeyPressed[vk_nokey] = !_IO_KeyPressed[vk_anykey];
-    _IO_KeyReleased[vk_nokey] = !_IO_KeyReleased[vk_anykey];
-
     // Gamepad Input Code
     SDL_GameControllerUpdate();
     for (int i = 0; i < ARRAY_SIZE(sdl_controllers); i++) {
