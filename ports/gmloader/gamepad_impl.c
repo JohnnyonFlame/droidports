@@ -18,11 +18,44 @@ Gamepad yoyo_gamepads[4] = {
 #define IS_BTN_BOUNDS  ((btn  >= 0) && (btn  < ARRAY_SIZE(yoyo_gamepads[0].buttons)))
 #define IS_CONTROLLER_BOUNDS ((id >= 0) && (id < ARRAY_SIZE(yoyo_gamepads)))
 
+int GetInt32(RValue *val)
+{
+    switch (val->kind)
+    {
+    case VALUE_REAL:
+        return (int)val->rvalue.val;
+    case VALUE_INT32:
+        return (int)val->rvalue.v32;
+    case VALUE_INT64:
+        return (int)val->rvalue.v64;
+    default:
+        return 0;
+    }
+}
+
+int translateButton(RValue *val)
+{
+    int v = GetInt32(val);
+    if (v >= gp_face1)
+        v = v - (int)gp_face1;
+    
+    return v;
+}
+
+int translateAxis(RValue *val)
+{
+    int v = GetInt32(val);
+    if (v >= gp_axislh)
+        v = v - (int)gp_axislh;
+    
+    return v;
+}
+
 // (RValue *ret, void *self, void *other, int argc, RValue *args)
 ABI_ATTR void gamepad_is_supported(RValue *ret, void *self, void *other, int argc, RValue *args)
 {
-    ret->kind = VALUE_BOOL;
-    ret->rvalue.val = 1.0f;
+    ret->kind = VALUE_REAL;
+    ret->rvalue.val = 1.0;
 }
 
 ABI_ATTR void gamepad_get_device_count(RValue *ret, void *self, void *other, int argc, RValue *args)
@@ -37,13 +70,13 @@ ABI_ATTR void gamepad_is_connected(RValue *ret, void *self, void *other, int arg
 {
     ret->kind = VALUE_REAL;
 
-    int id = (int)args[0].rvalue.val;
+    int id = GetInt32(&args[0]);
     if (!IS_CONTROLLER_BOUNDS) {
-        ret->rvalue.val = 0.0f;
+        ret->rvalue.val = 0.0;
         return;
     }
 
-    ret->rvalue.val = (yoyo_gamepads[id].is_available) ? 1.0f : 0.0f;
+    ret->rvalue.val = (yoyo_gamepads[id].is_available) ? 1.0 : 0.0;
 }
 
 ABI_ATTR void gamepad_get_description(RValue *ret, void *self, void *other, int argc, RValue *args)
@@ -80,8 +113,8 @@ ABI_ATTR void gamepad_axis_count(RValue *ret, void *self, void *other, int argc,
 ABI_ATTR void gamepad_axis_value(RValue *ret, void *self, void *other, int argc, RValue *args)
 {
     ret->kind = VALUE_REAL;
-    int id = (int)args[0].rvalue.val;
-    int axis = (int)(args[1].rvalue.val - gp_axislh);
+    int id = GetInt32(&args[0]);
+    int axis = translateAxis(&args[1]);
 
     if (!IS_CONTROLLER_BOUNDS || !IS_AXIS_BOUNDS) {
         ret->rvalue.val = 0.0f;
@@ -96,8 +129,8 @@ ABI_ATTR void gamepad_axis_value(RValue *ret, void *self, void *other, int argc,
 ABI_ATTR void gamepad_button_check(RValue *ret, void *self, void *other, int argc, RValue *args)
 {
     ret->kind = VALUE_REAL;
-    int id = (int)args[0].rvalue.val;
-    int btn = (int)(args[1].rvalue.val - gp_face1);
+    int id = GetInt32(&args[0]);
+    int btn = translateButton(&args[1]);
 
     if (!IS_CONTROLLER_BOUNDS || !IS_BTN_BOUNDS) {
         ret->rvalue.val = 0.0f;
@@ -109,8 +142,8 @@ ABI_ATTR void gamepad_button_check(RValue *ret, void *self, void *other, int arg
 ABI_ATTR void gamepad_button_check_pressed(RValue *ret, void *self, void *other, int argc, RValue *args)
 {
     ret->kind = VALUE_REAL;
-    int id = (int)args[0].rvalue.val;
-    int btn = (int)(args[1].rvalue.val - gp_face1);
+    int id = GetInt32(&args[0]);
+    int btn = translateButton(&args[1]);
 
     if (!IS_CONTROLLER_BOUNDS || !IS_BTN_BOUNDS) {
         ret->rvalue.val = 0.0f;
@@ -123,8 +156,8 @@ ABI_ATTR void gamepad_button_check_pressed(RValue *ret, void *self, void *other,
 ABI_ATTR void gamepad_button_check_released(RValue *ret, void *self, void *other, int argc, RValue *args)
 {
     ret->kind = VALUE_REAL;
-    int id = (int)args[0].rvalue.val;
-    int btn = (int)(args[1].rvalue.val - gp_face1);
+    int id = GetInt32(&args[0]);
+    int btn = translateButton(&args[1]);
 
     if (!IS_CONTROLLER_BOUNDS || !IS_BTN_BOUNDS) {
         ret->rvalue.val = 0.0f;
@@ -143,8 +176,9 @@ ABI_ATTR void gamepad_button_count(RValue *ret, void *self, void *other, int arg
 ABI_ATTR void gamepad_button_value(RValue *ret, void *self, void *other, int argc, RValue *args)
 {
     ret->kind = VALUE_REAL;
-    int id = (int)args[0].rvalue.val;
-    int btn = (int)(args[1].rvalue.val - gp_face1);
+    int id = GetInt32(&args[0]);
+    int btn = translateButton(&args[1]);
+
     if (!IS_CONTROLLER_BOUNDS || !IS_BTN_BOUNDS) {
         ret->rvalue.val = 0.0f;
         return;
@@ -159,7 +193,7 @@ ABI_ATTR void gamepad_set_vibration(RValue *ret, void *self, void *other, int ar
 
 ABI_ATTR void gamepad_set_axis_deadzone(RValue *ret, void *self, void *other, int argc, RValue *args)
 {
-    int id = (int)args[0].rvalue.val;
+    int id = GetInt32(&args[0]);
     double deadzone = args[1].rvalue.val;
     if (!IS_CONTROLLER_BOUNDS) {
         return;
@@ -171,7 +205,7 @@ ABI_ATTR void gamepad_set_axis_deadzone(RValue *ret, void *self, void *other, in
 ABI_ATTR void gamepad_get_axis_deadzone(RValue *ret, void *self, void *other, int argc, RValue *args)
 {
     ret->kind = VALUE_REAL;
-    int id = (int)args[0].rvalue.val;
+    int id = GetInt32(&args[0]);
     if (!IS_CONTROLLER_BOUNDS) {
         ret->rvalue.val = 0.0f;
         return;
