@@ -35,9 +35,12 @@ if(CMAKE_BUILD_TYPE MATCHES Debug)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Og -g -DDEBUG")
     set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -Og -g -DDEBUG")
 else()
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O2")
-    set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -O2")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Os")
+    set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -Os")
 endif()
+
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mthumb -mcpu=cortex-a9 -mfpu=vfpv3-d16")
+set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -mthumb -mcpu=cortex-a9 -mfpu=vfpv3-d16")
 
 # Add the 3rd-party packages
 add_subdirectory(3rdparty)
