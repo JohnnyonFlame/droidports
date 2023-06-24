@@ -5,6 +5,7 @@
 #include "libyoyo_internals.h"
 #include "libyoyo.h"
 
+int MAP_DPAD_AS_AXIS = 0;
 Gamepad yoyo_gamepads[4] = {
     [0 ... 3] = {
         .is_available = 0, 
@@ -117,7 +118,31 @@ ABI_ATTR void gamepad_axis_value(RValue *ret, void *self, void *other, int argc,
         return;
     }
 
-    ret->rvalue.val = yoyo_gamepads[id].axis[axis];
+    if (MAP_DPAD_AS_AXIS && axis < 2) {
+        if (axis == 0) {
+            if (yoyo_gamepads[id].buttons[14])
+                ret->rvalue.val = -1.0f;
+            else if (yoyo_gamepads[id].buttons[15])
+                ret->rvalue.val = 1.0f;
+            else
+                ret->rvalue.val = 0.0f;
+        } else if (axis == 1) {
+            if (yoyo_gamepads[id].buttons[12])
+                ret->rvalue.val = -1.0f;
+            else if (yoyo_gamepads[id].buttons[13])
+                ret->rvalue.val = 1.0f;
+            else
+                ret->rvalue.val = 0.0f;
+        }
+
+        // Revert back to analog if nothing was pressed.
+        if (fabs(ret->rvalue.val) < yoyo_gamepads[id].deadzone)
+            ret->rvalue.val = yoyo_gamepads[id].axis[axis];
+    }
+    else {
+        ret->rvalue.val = yoyo_gamepads[id].axis[axis];
+    }
+    
     if (fabs(ret->rvalue.val) < yoyo_gamepads[id].deadzone)
         ret->rvalue.val = 0.0f;
 }
@@ -132,7 +157,11 @@ ABI_ATTR void gamepad_button_check(RValue *ret, void *self, void *other, int arg
         ret->rvalue.val = 0.0f;
         return;
     }
-    ret->rvalue.val = (yoyo_gamepads[id].buttons[btn] > 0) ? 1.0f : 0.0f;
+
+    if (MAP_DPAD_AS_AXIS && (btn >= 12 && btn <= 15))
+        ret->rvalue.val = 0.0f;
+    else
+        ret->rvalue.val = (yoyo_gamepads[id].buttons[btn] > 0) ? 1.0f : 0.0f;
 }
 
 ABI_ATTR void gamepad_button_check_pressed(RValue *ret, void *self, void *other, int argc, RValue *args)
@@ -146,7 +175,10 @@ ABI_ATTR void gamepad_button_check_pressed(RValue *ret, void *self, void *other,
         return;
     }
 
-    ret->rvalue.val = (yoyo_gamepads[id].buttons[btn] == 2) ? 1.0f : 0.0f;
+    if (MAP_DPAD_AS_AXIS && (btn >= 12 && btn <= 15))
+        ret->rvalue.val = 0.0f;
+    else
+        ret->rvalue.val = (yoyo_gamepads[id].buttons[btn] == 2) ? 1.0f : 0.0f;
 }
 
 ABI_ATTR void gamepad_button_check_released(RValue *ret, void *self, void *other, int argc, RValue *args)
@@ -160,7 +192,10 @@ ABI_ATTR void gamepad_button_check_released(RValue *ret, void *self, void *other
         return;
     }
 
-    ret->rvalue.val = (yoyo_gamepads[id].buttons[btn] == -1) ? 1.0f : 0.0f;
+    if (MAP_DPAD_AS_AXIS && (btn >= 12 && btn <= 15))
+        ret->rvalue.val = 0.0f;
+    else
+        ret->rvalue.val = (yoyo_gamepads[id].buttons[btn] == -1) ? 1.0f : 0.0f;
 }
 
 ABI_ATTR void gamepad_button_count(RValue *ret, void *self, void *other, int argc, RValue *args)
@@ -180,7 +215,10 @@ ABI_ATTR void gamepad_button_value(RValue *ret, void *self, void *other, int arg
         return;
     }
 
-    ret->rvalue.val = (yoyo_gamepads[id].buttons[btn] > 0) ? 1.0f : 0.0f;
+    if (MAP_DPAD_AS_AXIS && (btn >= 12 && btn <= 15))
+        ret->rvalue.val = 0.0f;
+    else
+        ret->rvalue.val = (yoyo_gamepads[id].buttons[btn] > 0) ? 1.0f : 0.0f;
 }
 
 ABI_ATTR void gamepad_set_vibration(RValue *ret, void *self, void *other, int argc, RValue *args)

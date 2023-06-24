@@ -675,6 +675,28 @@ void invoke_app(zip_t *apk, const char *apk_path)
     // Get current jni environment
     JNIEnv *env = jni_get_env();
 
+    char *platform_ov = getenv("GMLOADER_PLATFORM");
+    if (platform_ov) {
+        for (int i = 0; platform_ov[i] != '\0'; i++)
+            platform_ov[i] = tolower(platform_ov[i]);
+
+        if (strcmp(platform_ov, "os_windows") == 0)
+            FORCE_PLATFORM = os_windows;
+        else if (strcmp(platform_ov, "os_android") == 0)
+            FORCE_PLATFORM = os_android;
+        else if (strcmp(platform_ov, "os_linux") == 0)
+            FORCE_PLATFORM = os_linux;
+        else if (strcmp(platform_ov, "os_psvita") == 0)
+            FORCE_PLATFORM = os_psvita;
+        else
+            fatal_error("Unexpected platform '%s'.\n", platform_ov);
+    }
+
+    char *map_dpad_axis = getenv("GMLOADER_DPAD_AS_AXIS");
+    if (map_dpad_axis && map_dpad_axis[0] == '1') {
+        MAP_DPAD_AS_AXIS = 1;
+    }
+
     // Link and Resolve RunnerJNILib
     jni_register_class(&RunnerJNILib_class);
     Resolve_RunnerJNILib(libyoyo);

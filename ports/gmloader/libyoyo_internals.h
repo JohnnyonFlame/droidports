@@ -156,6 +156,7 @@ typedef struct RFunction {
 #define vk_ralt        (165)
 
 extern Gamepad yoyo_gamepads[MAX_GAMEPADS];
+extern int MAP_DPAD_AS_AXIS;
  
 // Symbols from libyoyo.so
 typedef ABI_ATTR void (*fct_add_t)(const char *name, routine_t func, int argc, char ret);
