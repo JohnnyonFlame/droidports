@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include <math.h>
 #include "platform.h"
 #include "so_util.h"
@@ -252,5 +253,5 @@ void register_gamepad_functs(fct_add_t fct_add)
     fct_add("gamepad_set_vibration", gamepad_set_vibration, 3, 1);
     fct_add("gamepad_set_color", gamepad_set_colour, 2, 1);
     fct_add("gamepad_set_colour", gamepad_set_colour, 2, 1);
-    hook_symbol(libyoyo, "_Z14GamePadRestartv", GamePadRestart, 1);   
+    hook_symbol(libyoyo, "_Z14GamePadRestartv", (uintptr_t)GamePadRestart, 1);   
 }
