@@ -148,8 +148,8 @@
     AL_DECL_FWD   (alcMakeContextCurrent,          ALCboolean,  (ALCcontext *context),                                                                                                        (context)) \
     AL_DECL_FWD   (alcGetCurrentContext,           ALCcontext*, (),                                                                                                                           ()) \
     AL_DECL_FWD   (alcGetContextsDevice,           ALCdevice*,  (ALCcontext *context),                                                                                                        (context)) \
-    AL_DECL_FWD   (alcSetThreadContext,            ALCboolean,  (ALCcontext *context),                                                                                                        (context)) \
-    AL_DECL_FWD   (alcGetThreadContext,            ALCcontext*, (),                                                                                                                           ()) \
+    /* AL_DECL_FWD   (alcSetThreadContext,            ALCboolean,  (ALCcontext *context),                                                                                                        (context)) */ \
+    /* AL_DECL_FWD   (alcGetThreadContext,            ALCcontext*, (),                                                                                                                           ()) */ \
     /* AL_DECL_FWD   (alIsEffect,                     ALboolean,   (ALuint effect),                                                                                                              (effect)) */ \
     /* AL_DECL_FWD   (alIsFilter,                     ALboolean,   (ALuint filter),                                                                                                              (filter)) */ \
     /* AL_DECL_FWD   (alIsAuxiliaryEffectSlot,        ALboolean,   (ALuint effectslot),                                                                                                          (effectslot)) */ \
