@@ -86,23 +86,52 @@ static jboolean RunnerJNILib_GamepadConnected(jint deviceIndex)
 static jstring RunnerJNILib_GamepadDescription(jint deviceIndex)
 {
     jstring ret = malloc(sizeof(_jstring));
-    *ret = MK_JSTRING(strdup("Generic Gamepad"));
+    *ret = MK_JSTRING(strdup("Xbox 360 Controller (XInput STANDARD GAMEPAD)"));
     return ret;
 }
 
 static jfloatArray RunnerJNILib_GamepadAxesValues(jint deviceIndex)
 {
+#if 0
+    static float axes_float[4] = {0.0f};
+    static _jarray axes = {
+        .clazz = 0x0,
+        .count = sizeof(axes_float) / sizeof(axes_float[0]),
+        .elements = &axes_float
+    };
+
+    for (int i = 0; i < 4; i++)
+        axes_float[i] = yoyo_gamepads[deviceIndex].axis[i];
+
+    return &axes;
+#else
     WARN_STUB
+#endif
 }
 
 static jfloatArray RunnerJNILib_GamepadButtonValues(jint deviceIndex)
 {
+#if 0
+    static float btn_float[16] = {0.0f};
+    static _jarray buttons = {
+        .clazz = 0x0,
+        .count = sizeof(btn_float) / sizeof(btn_float[0]),
+        .elements = &btn_float
+    };
+
+    // Hardcoded button mapping - see the official game input reference page for the table.
+    for (int i = 0; i < 16; i++)
+        btn_float[i] = yoyo_gamepads[deviceIndex].buttons[i];
+
+    return &buttons;
+#else
     WARN_STUB
+#endif
 }
 
 static jint RunnerJNILib_GamepadGMLMapping(jint deviceIndex, jint inputId)
 {
-    WARN_STUB
+    return inputId - 0x8001;
 }
 
 static void RunnerJNILib_PlayMP3(jstring file, jint loops)
@@ -149,7 +178,6 @@ static void RunnerJNILib_ShowMessage(jstring msg)
 
 static jint RunnerJNILib_UsingGL2()
 {
-    WARN_STUB
     return 1;
 }
 
