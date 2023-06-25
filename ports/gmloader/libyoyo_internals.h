@@ -165,9 +165,9 @@ typedef ABI_ATTR void (*create_async_event_with_ds_map_t)(int, int);
 
 extern uintptr_t *New_Room;
 extern uintptr_t *Current_Room;
-extern fct_add_t Function_Add;
-extern create_ds_map_t CreateDsMap;
-extern create_async_event_with_ds_map_t CreateAsynEventWithDSMap;
+extern ABI_ATTR fct_add_t Function_Add;
+extern ABI_ATTR create_ds_map_t CreateDsMap;
+extern ABI_ATTR create_async_event_with_ds_map_t CreateAsynEventWithDSMap;
 
 #define N_BUTTONS 30
 extern uint8_t *_IO_ButtonDown;
