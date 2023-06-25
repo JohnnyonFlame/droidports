@@ -196,6 +196,12 @@ void register_texture_functs(so_module *mod)
     ENSURE_SYMBOL(mod, ReadPNGFile, "_Z11ReadPNGFilePviPiS0_b");
     ENSURE_SYMBOL(mod, g_TextureScale, "g_TextureScale");
 
+	char *TEX_HACK_DISABLE = getenv("GMLOADER_DISABLE_TEXHACK");
+	if (TEX_HACK_DISABLE != NULL && TEX_HACK_DISABLE[0] == '1') {
+		warning("Texture compression hack NOT ENABLED!!!\n");
+		return;
+	}
+
     hook_symbol(mod, "png_get_IHDR", (uintptr_t)&png_get_IHDR_hook, 0);
 
     uint8_t has_mips = 1;
