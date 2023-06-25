@@ -122,7 +122,7 @@ static ABI_ATTR void iface_CallStaticVoidMethodA(JNIEnv *env, jclass jclazz, jme
 
 ABI_ATTR static jobjectArray iface_NewObjectArray_NONTRIVIAL(JNIEnv *env, jsize len, jclass clazz, jobject init)
 {
-	WARN_STUB;
+	// WARN_STUB;
 	return NULL;
 }
 
