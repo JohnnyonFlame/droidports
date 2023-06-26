@@ -9,12 +9,6 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#define STBI_MALLOC malloc
-#define STBI_REALLOC realloc
-#define STBI_FREE free
-#define STB_IMAGE_IMPLEMENTATION
-#define STB_ONLY_PNG
-#include "stb_image.h"
 #include "pthread_bridge.h"
 #include "platform.h"
 #include "so_util.h"
@@ -26,6 +20,7 @@
 #include "libyoyo.h"
 #include "media.h"
 #include "gles2.h"
+#include "splash.h"
 
 so_module *libyoyo = NULL;
 
@@ -582,44 +577,6 @@ void patch_specifics(so_module *mod)
     so_symbol_fix_ldmia(mod, "_Z11Shader_LoadPhjS_");
 }
 
-static void createSplashTexture(zip_t *apk, GLuint *tex, int *w_tex, int *h_tex, int *w, int *h)
-{
-    void *inflated_ptr = NULL;
-    size_t inflated_bytes = 0;
-    uint32_t *pixels = NULL;
-
-    int _;
-    if (zip_inflate_buf(apk, "assets/splash.png", &inflated_bytes, &inflated_ptr)) {
-        pixels = (uint8_t*)stbi_load_from_memory(inflated_ptr, inflated_bytes, w, h, &_, 4);
-        free(inflated_ptr);
-    } else {
-        *w = 320;
-        *h = 240;
-        warning("Warning, no splash image available, creating xor pattern...\n");
-        pixels = malloc(320 * 240 * sizeof(uint32_t));
-
-        for (int i = 0; i < 240; i++) {
-            for (int j = 0; j < 320; j++) {
-                pixels[i * 320 + j] = ((~i ^ j) << 16) | ((i ^ ~j) << 8) | (i ^ j);
-            }
-        }
-    }
-
-    // Get pot-2 sizes
-    *w_tex = 1; while(*w_tex < *w) *w_tex *= 2;
-    *h_tex = 1; while(*h_tex < *h) *h_tex *= 2;
-
-    glGenTextures(1, tex);
-    glBindTexture(GL_TEXTURE_2D, *tex);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, *w_tex, *h_tex, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, *w, *h, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
-    glFlush();
-
-    free(pixels);
-}
-
 static int prev_room = 0xFFFFFFFF;
 void flushWhenFull()
 {
@@ -730,31 +687,10 @@ void invoke_app(zip_t *apk, const char *apk_path)
     // Load splash screen background texture
     GLuint tex;
     int splash_w, splash_h, splash_tex_w, splash_tex_h;
-    createSplashTexture(apk, &tex, &splash_tex_w, &splash_tex_h, &splash_w, &splash_h);
-	_jstring splash_args[] = {
-		MK_JSTRING(apk_path),
-		MK_JSTRING("assets/splash.png")
-    };
-
-    // Display splash screen
-    float aspect_png = (float)splash_w/(float)splash_h;
-    float aspect_screen = (float)w/(float)h;
-    float scale_x, scale_y;
-    if (aspect_png > aspect_screen) {
-        scale_x = 1.0f;
-        scale_y = aspect_screen / aspect_png;
-    } else {
-        scale_x = aspect_png / aspect_screen;
-        scale_y = 1.0f;
-    }
-
-    float nw = w*scale_x, nh = h*scale_y;
-    glViewport((GLsizei)((w - nw) / 2.0f), (GLsizei)((h - nh) / 2), (GLsizei)nw, (GLsizei)nh);
-    RunnerJNILib_RenderSplash(env, NULL, NULL, NULL, w, h, splash_tex_w, splash_tex_h, splash_w, splash_h);
+    create_splash_texture(apk, &tex, &splash_tex_w, &splash_tex_h, &splash_w, &splash_h);
+    render_splash_image(tex, w, h, splash_w, splash_h, splash_tex_w, splash_tex_h);
+    free_splash_image(tex);
     flip_display_surface();
-
-    // Free splash screen background texture
-    glDeleteTextures(1, &tex);
 
     // Initialize runner
 	_jstring args[] = {
