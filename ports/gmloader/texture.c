@@ -6,6 +6,7 @@
 #include "libyoyo.h"
 
 #define STB_ONLY_PNG
+#include "libyoyo.h"
 #include "stb_image.h"
 #include "io_util.h"
 #include "gles2.h"
