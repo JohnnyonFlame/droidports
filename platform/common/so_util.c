@@ -226,27 +226,41 @@ int so_load(so_module *mod, const char *filename, uintptr_t load_addr, void *so_
       size_t prog_size;
 
       if ((mod->phdr[i].p_flags & PF_X) == PF_X) {
+        prog_size = ALIGN_MEM(mod->phdr[i].p_memsz, mod->phdr[i].p_align);
+
         // Allocate arena for code patches, trampolines, etc
         // Sits exactly under the desired allocation space
         mod->patch_size = ALIGN_MEM(PATCH_SZ, mod->phdr[i].p_align);
-        if (load_addr)
+        if (load_addr > mod->patch_size)
           mod->patch_blockid = block_alloc(1, load_addr - mod->patch_size, mod->patch_size);
         else {
-          mod->patch_blockid = block_alloc(1, NULL, mod->patch_size + mod->patch_size);
-          load_addr += mod->patch_size;
+          mod->patch_blockid = block_alloc(1, NULL, mod->patch_size + prog_size);
+        }
+
+        if (!block_valid(mod->patch_blockid)) {
+          fatal_error("Failure to allocate patch block.\n");
+          res = -1;
+          goto err_free_so;
         }
 
         mod->patch_base = (uintptr_t)block_get_base_address(mod->patch_blockid);
         mod->patch_head = mod->patch_base;
 
-        // Allocate space for the .text section
-        prog_size = ALIGN_MEM(mod->phdr[i].p_memsz, mod->phdr[i].p_align);
-        mod->text_blockid = block_alloc(1, load_addr, prog_size);
+        if (load_addr != NULL) {
+          // Allocate space for the .text section
+          mod->text_blockid = block_alloc(1, load_addr, prog_size);
 
-        if ((mod->text_blockid < 0) || (mod->patch_blockid < 0))
-          goto err_free_so;
+          if (!block_valid(mod->text_blockid)) {
+            fatal_error("Failure to allocate text block.\n");
+            res = -1;
+            goto err_free_text;
+          }
 
-        prog_data = block_get_base_address(mod->text_blockid);
+          prog_data = block_get_base_address(mod->text_blockid);
+        } else {
+          mod->text_blockid = -1;
+          prog_data = mod->patch_base + mod->patch_size;
+        }
 
         mod->phdr[i].p_vaddr += (Elf32_Addr)prog_data;
 
@@ -264,17 +278,24 @@ int so_load(so_module *mod, const char *filename, uintptr_t load_addr, void *so_
         // Find where .data sits at
         data_addr = (uintptr_t)prog_data + prog_size;
       } else {
-        if (data_addr == 0)
+        if (data_addr == 0) {
+          res = -1;
           goto err_free_so;
+        }
 
-        if (mod->n_data >= MAX_DATA_SEG)
+        if (mod->n_data >= MAX_DATA_SEG) {
+          res = -1;
           goto err_free_data;
+        }
         
         prog_size = ALIGN_MEM(mod->phdr[i].p_memsz + mod->phdr[i].p_vaddr - (data_addr - mod->text_base), mod->phdr[i].p_align);
         mod->data_blockid[mod->n_data] = block_alloc(0, data_addr, prog_size);
 
-        if (mod->data_blockid[mod->n_data] < 0)
+        if (!block_valid(mod->data_blockid[mod->n_data])) {
+          fatal_error("Failed to create data block %d!\n", mod->n_data);
+          res = -1;
           goto err_free_text;
+        }
 
         prog_data = block_get_base_address(mod->data_blockid[mod->n_data]);
         data_addr = prog_data + prog_size; // for the next one
@@ -288,12 +309,19 @@ int so_load(so_module *mod, const char *filename, uintptr_t load_addr, void *so_
 
       size_t zero_sz = prog_size - mod->phdr[i].p_filesz;
       char *zero = calloc(zero_sz, 1);
+      if (zero == NULL) {
+          fatal_error("Failed to allocate zero buffer!\n");
+          res = -1;
+          goto err_free_text;
+      }
+      
       unrestricted_memcpy(prog_data + mod->phdr[i].p_filesz, zero, zero_sz);
       unrestricted_memcpy((void *)mod->phdr[i].p_vaddr, (void *)((uintptr_t)so_data + mod->phdr[i].p_offset), mod->phdr[i].p_filesz);
       free(zero);
     }
   }
 
+  warning("vmem sz: %p\n", data_addr - mod->text_base);
   for (int i = 0; i < mod->ehdr->e_shnum; i++) {
     char *sh_name = mod->shstr + mod->shdr[i].sh_name;
     uintptr_t sh_addr = mod->text_base + mod->shdr[i].sh_addr;
@@ -366,9 +394,13 @@ int so_load(so_module *mod, const char *filename, uintptr_t load_addr, void *so_
   // Oops
 err_free_data:
   for (int i = 0; i < mod->n_data; i++)
-    block_free(mod->data_blockid[i], mod->data_size[i]);
+    if (block_valid(mod->data_blockid[i]))
+      block_free(mod->data_blockid[i], mod->data_size[i]);
 err_free_text:
-  block_free(mod->text_blockid, mod->text_size);
+  if (block_valid(mod->patch_blockid))
+    block_free(mod->patch_blockid, mod->patch_size);
+  if (block_valid(mod->text_blockid))
+    block_free(mod->text_blockid, mod->text_size);
 err_free_so:
   free(so_data);
 

@@ -37,8 +37,8 @@ DynLibFunction *so_dynamic_libraries[] = {
 
 int main(int argc, char *argv[])
 {
-    uintptr_t address = 0x40000000;
-    uintptr_t address2 = 0;
+    uintptr_t addr_yoyo = 0x40000000;
+    uintptr_t addr_stdcpp = addr_yoyo - (0x200000 + 0x10000);
     char *apk_path = argv[1];
     int extract = 0;
 
@@ -88,7 +88,7 @@ int main(int argc, char *argv[])
 
     warning("Loading runner elf %s (%p, %d bytes)...\n", libcpp, stdcpp_inflated_ptr, inflated_bytes);
     so_module cpp = {};
-    int ret = so_load(&cpp, libcpp, address2, stdcpp_inflated_ptr, inflated_bytes);
+    int ret = so_load(&cpp, libcpp, addr_stdcpp, stdcpp_inflated_ptr, inflated_bytes);
     if (ret != 0) {
         fatal_error("Unable to load library!\n");
         return -1;
@@ -103,7 +103,7 @@ int main(int argc, char *argv[])
 
     warning("Loading runner elf %s (%p, %d bytes)...\n", libyoyo, yoyo_inflated_ptr, inflated_bytes);
     so_module runner = {};
-    ret = so_load(&runner, libyoyo, address, yoyo_inflated_ptr, inflated_bytes);
+    ret = so_load(&runner, libyoyo, addr_yoyo, yoyo_inflated_ptr, inflated_bytes);
     if (ret != 0) {
         fatal_error("Unable to load library!\n");
         return -1;

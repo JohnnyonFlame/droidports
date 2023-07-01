@@ -17,13 +17,18 @@ int unrestricted_memcpy(void *dst, const void *src, size_t len)
   memcpy(dst, src, len);
 }
 
-uintptr_t block_alloc(int exec, uintptr_t base_addr, size_t sz)
+intptr_t block_alloc(int exec, uintptr_t base_addr, size_t sz)
 {
   int flags = MAP_PRIVATE|MAP_ANONYMOUS|MAP_POPULATE;
   if ((void*)base_addr != NULL)
     flags |= MAP_FIXED;
   
-  return (uintptr_t)mmap((void*)base_addr, sz, PROT_READ|PROT_WRITE|(exec ? PROT_EXEC : 0), flags, 0, 0);
+  return (intptr_t)mmap((void*)base_addr, sz, PROT_READ|PROT_WRITE|(exec ? PROT_EXEC : 0), flags, 0, 0);
+}
+
+int block_valid(intptr_t block)
+{
+  return block != MAP_FAILED;
 }
 
 void block_free(uintptr_t block, size_t sz)

@@ -30,7 +30,7 @@ extern "C" {
   }
 
 
-#define MAX_DATA_SEG 4
+#define MAX_DATA_SEG 8
 ABI_ATTR typedef int (* init_array_t)();
 typedef struct so_module {
   struct so_module *next;
@@ -39,7 +39,7 @@ typedef struct so_module {
   // patch arena is allocated prior to the .text segment, while the cave is the padding region used
   // to align segments, and thus left free to use as a code cave (see "p_align" member of the
   // program header table entries).
-  uintptr_t patch_blockid, text_blockid, data_blockid[MAX_DATA_SEG];
+  intptr_t patch_blockid, text_blockid, data_blockid[MAX_DATA_SEG];
   uintptr_t patch_base, patch_head, cave_base, cave_head, text_base, data_base[MAX_DATA_SEG];
   size_t patch_size, cave_size, text_size, data_size[MAX_DATA_SEG];
   int n_data;
@@ -91,7 +91,8 @@ uintptr_t so_symbol(so_module *mod, const char *symbol);
 //Platform Specific Implementations
 void so_symbol_fix_ldmia(so_module *mod, const char *symbol);
 int unrestricted_memcpy(void *dst, const void *src, size_t len);
-uintptr_t block_alloc(int exec, uintptr_t base_addr, size_t sz);
+intptr_t block_alloc(int exec, uintptr_t base_addr, size_t sz);
+int block_valid(intptr_t block);
 void block_free(uintptr_t block, size_t sz);
 void *block_get_base_address(uintptr_t block);
 void so_flush_caches(so_module *mod, int write);
