@@ -87,7 +87,7 @@ ABI_ATTR void gamepad_get_description(RValue *ret, void *self, void *other, int 
     ENSURE_SYMBOL(libyoyo, MMAllocString, "_ZN13MemoryManager5AllocEjPKcib", "_ZN13MemoryManager5AllocEiPKcib");
 
     ret->kind = VALUE_STRING;
-    ret->rvalue.str = MMAllocString("Xbox 360 Controller (XInput STANDARD GAMEPAD)", __FILENAME__, 0x54, 1);
+    ret->rvalue.str = MMAllocString("Xbox 360 Controller (XInput STANDARD GAMEPAD)", __FILE__, 0x54, 1);
 }
 
 ABI_ATTR void gamepad_get_button_threshold(RValue *ret, void *self, void *other, int argc, RValue *args)

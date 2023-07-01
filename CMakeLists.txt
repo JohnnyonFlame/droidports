@@ -88,8 +88,8 @@ add_executable(${PORT}
   ${PLATFORM_SOURCES} # Platform specific files
 )
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__FILENAME__='\"$(subst ${CMAKE_SOURCE_DIR}/,,$(abspath $<))\"'")
-set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS} -D__FILENAME__='\"$(subst ${CMAKE_SOURCE_DIR}/,,$(abspath $<))\"'")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fmacro-prefix-map=\"${CMAKE_SOURCE_DIR}\"/=/")
+set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS} -fmacro-prefix-map=\"${CMAKE_SOURCE_DIR}\"/=/")
 
 target_link_libraries(${PORT}
     stdc++
@@ -98,7 +98,6 @@ target_link_libraries(${PORT}
     ${ZLIB_LIBRARY}
     ${LIBZIP_LIBRARY}
     ${FREETYPE_LIBRARY}
-    ${PNG_LIBRARY}
     ${BZIP2_LIBRARY}
     ${OPENAL_LIBRARY}
     pthread
