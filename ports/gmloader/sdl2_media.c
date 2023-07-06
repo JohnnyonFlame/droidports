@@ -19,6 +19,11 @@ static controller_t sdl_controllers[8] = {
 static SDL_Window *sdl_win;
 static SDL_GLContext *sdl_ctx;
 
+void deinit_display()
+{
+    SDL_Quit();
+}
+
 int init_display(int w, int h)
 {
     SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER);
@@ -34,7 +39,6 @@ int init_display(int w, int h)
         warning("Setting video mode %dx%d.\n", dp.w, dp.h);
         w = dp.w;
         h = dp.h;
-        flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;   
     }
 
     // SDL2.0 specific code
@@ -47,7 +51,7 @@ int init_display(int w, int h)
     SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
     SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
 
-    sdl_win = SDL_CreateWindow("GMLoader", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, w, h, flags);
+    sdl_win = SDL_CreateWindow("GMLoader", 0, 0, w, h, flags);
     if (!sdl_win) {
 		fatal_error("Failed to create window. %s\n", SDL_GetError());
 		return 0;
