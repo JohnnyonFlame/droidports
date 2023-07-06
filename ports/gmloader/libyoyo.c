@@ -8,6 +8,7 @@
 #include <pthread.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <sys/mman.h>
 
 #include "pthread_bridge.h"
 #include "platform.h"
