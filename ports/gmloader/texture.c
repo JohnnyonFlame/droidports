@@ -88,6 +88,15 @@ void LoadTextureFromPNG_generic(uint32_t arg1, uint32_t arg2, uint32_t *flags, u
 					case 0x09:
 						glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGBA_S3TC_DXT3_EXT, width, height, 0, texture_data_size, texture_data);
 						break;
+					case 0x18:
+						glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGBA_ASTC_4x4, width, height, 0, texture_data_size, texture_data);
+						break;
+					case 0x1D:
+						glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGBA_ASTC_5x5, width, height, 0, texture_data_size, texture_data);
+						break;
+					case 0x1F:
+						glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGBA_ASTC_6x6, width, height, 0, texture_data_size, texture_data);
+						break;
                     }
                     GLint err = glGetError();
                     if (err != GL_NO_ERROR) {
