@@ -90,12 +90,12 @@ static void get_aspect_correct_coords(int viewport[2], int plane[2], float uv[2]
 
     if (aspect_viewport > aspect_plane) {
         // viewport wider than plane
-        ratio_x = ((float)viewport[1] / plane[1]);
+        ratio_x = aspect_plane / aspect_viewport;
         ratio_y = 1.0f;
     } else {
         // plane wider than viewport
         ratio_x = 1.0f;
-        ratio_y = ((float)viewport[0] / plane[0]);
+        ratio_y = aspect_viewport / aspect_plane;
     }
 
     shift_x = (1.0f - 1.0f * ratio_x) / 2.0f;
