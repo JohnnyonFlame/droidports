@@ -198,4 +198,10 @@ static jint RunnerJNILib_HasVsyncHandler()
     return 0;
 }
 
+static void RunnerJNILib_MoveTaskToBack()
+{
+    warning("Calling MoveTaskToBack! Time to Die!\n");
+    libyoyoIsForeground = 0;
+}
+
 #include "prologue_helpers.h"

@@ -33,6 +33,7 @@
     DECL_STATIC_MANAGED   ( RunnerJNILib, GetUDID,                jstring,     F_v,              ARG0,             "()Ljava/lang/jstring;")                                                            \
     DECL_STATIC_MANAGED_NR( RunnerJNILib, WaitForVsync,           void,        F_v,              ARG0,             "()V")                                                                              \
     DECL_STATIC_MANAGED   ( RunnerJNILib, HasVsyncHandler,        jint,        F_v,              ARG0,             "()I")                                                                              \
+    DECL_STATIC_MANAGED_NR( RunnerJNILib, MoveTaskToBack,         void,        F_v,              ARG0,             "()V")                                                                              \
 
 #define JNIRUNNER_NATIVE_LIB_FUNCS \
             /*  |Class                                   |Return       |Argument List Definition                                                                                                                 */\

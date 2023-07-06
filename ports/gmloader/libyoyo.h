@@ -4,6 +4,7 @@
 #include <zip.h>
 #include "platform.h"
 
+extern int libyoyoIsForeground;
 extern int setup_ended;
 extern so_module *libyoyo;
 extern const char *get_platform_savedir();

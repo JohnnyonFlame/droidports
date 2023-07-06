@@ -24,6 +24,7 @@
 #include "splash.h"
 
 so_module *libyoyo = NULL;
+int libyoyoIsForeground = 1;
 
 uintptr_t *New_Room = NULL;
 uintptr_t *Current_Room = NULL;
@@ -422,8 +423,8 @@ audio_close_fd:
 }
 
 extern void _ZdlPv(void *); //operator.delete
-static ABI_ATTR (*Mutex__dtor)(void *) = NULL;
-static ABI_ATTR (*MemoryManager__Free)(void *) = NULL;
+static ABI_ATTR void (*Mutex__dtor)(void *) = NULL;
+static ABI_ATTR void (*MemoryManager__Free)(void *) = NULL;
 
 ABI_ATTR CAudioGroup *CAudioGroup_dtor(CAudioGroup *this)
 {
@@ -547,12 +548,18 @@ void patch_specifics(so_module *mod)
         fct_add(*fct, noop, 1, 1);
     }
 
-    // Add a "game_end" function (useless on 1.4.1788+)
+    // Add a "game_end" function (useless on 1.4.1788+ until 1.4.1804ish?)
     /* From 'https://store.yoyogames.com/downloads/gm-studio/release-notes-studio.html':
      * "Changed game_end() to be ignored on Android and iOS, following crash logs that indicated 
      * this was causing memory corruption and crashes in subsequent runs of your app"
      */
-    fct_add("game_end", game_end_reimpl, 1, 1);
+    uint32_t *_Z15Command_EndGamev = so_symbol(libyoyo, "_Z15Command_EndGamev"); 
+    if (_Z15Command_EndGamev != NULL) {
+        if (*_Z15Command_EndGamev == 0xE12FFF1E) { // instruction => bx lr (noop function)
+            warning("Adding game_end hack...\n");
+            fct_add("game_end", game_end_reimpl, 1, 1);
+        }
+    }
 
     // Reworked "audio_sound_get_track_position" function
     /* The provided built-in has non-monotonic, jittery behavior. This causes a plenthora of issues
@@ -721,7 +728,7 @@ void invoke_app(zip_t *apk, const char *apk_path)
         	flip_display_surface();
         
         flushWhenFull();
-    } while (ret != 0 && ret != 2);
+    } while (ret != 0 && ret != 2 && libyoyoIsForeground);
 
     warning("yoyo died.\n");
 }
