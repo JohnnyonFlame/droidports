@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <math.h>
+#include <string.h>
 #include "platform.h"
 #include "so_util.h"
 #include "libyoyo_internals.h"
@@ -84,10 +85,15 @@ ABI_ATTR void gamepad_is_connected(RValue *ret, void *self, void *other, int arg
 void *(*MMAllocString)(char *, const char *, int, uint8_t) = NULL;
 ABI_ATTR void gamepad_get_description(RValue *ret, void *self, void *other, int argc, RValue *args)
 {
-    ENSURE_SYMBOL(libyoyo, MMAllocString, "_ZN13MemoryManager5AllocEjPKcib", "_ZN13MemoryManager5AllocEiPKcib");
+    Ref *ref = malloc(sizeof(*ref));
+    *ref = (Ref){
+        .m_refCount = 1,
+        .m_size = strlen("Xbox 360 Controller (XInput STANDARD GAMEPAD)"),
+        .m_thing = strdup("Xbox 360 Controller (XInput STANDARD GAMEPAD)")
+    };
 
     ret->kind = VALUE_STRING;
-    ret->rvalue.str = MMAllocString("Xbox 360 Controller (XInput STANDARD GAMEPAD)", __FILE__, 0x54, 1);
+    ret->rvalue.str = ref;
 }
 
 ABI_ATTR void gamepad_get_button_threshold(RValue *ret, void *self, void *other, int argc, RValue *args)
